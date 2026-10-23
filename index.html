@@ -325,6 +325,12 @@
       </div>
     </div>
 
+    <div class="sv-card">
+      <h2>Évolution du classement</h2>
+      <p class="sv-note">Position en championnat après chaque journée jouée (1 = premier). Reconstituée à partir du classement complet de la série, journée par journée.</p>
+      <div class="sv-chart" id="sv-chart-classement"></div>
+    </div>
+
     <div class="sv-grid wide">
       <div class="sv-card">
         <h2>Buts par 90 minutes</h2>
@@ -687,6 +693,44 @@
     });
   }
 
+  // ---- Évolution du classement : position après chaque journée (axe inversé, 1er en haut) ----
+  function renderClassementEvolution(DATA) {
+    const el = document.getElementById('sv-chart-classement');
+    el.innerHTML = '';
+    const rows = DATA.classement_evolution;
+    if (!rows || !rows.length) { el.innerHTML = '<p class="sv-note">Aucune donnée pour l’instant.</p>'; return; }
+    const width = Math.max(240, el.clientWidth || 320);
+    const height = 220;
+    const padL = 28, padR = 12, padT = 16, padB = 24;
+    const totalEquipes = rows[rows.length - 1].total_equipes || 16;
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${width} ${height}`);
+    const x = d3.scaleLinear().domain([1, rows.length]).range([padL, width - padR]);
+    const y = d3.scaleLinear().domain([1, totalEquipes]).range([padT, height - padB]);
+
+    y.ticks(Math.min(8, totalEquipes)).forEach((t) => {
+      if (t < 1) return;
+      svg.append('line').attr('x1', padL).attr('x2', width - padR).attr('y1', y(t)).attr('y2', y(t))
+        .attr('stroke', 'var(--color-border-line)').attr('stroke-width', 1);
+      svg.append('text').attr('x', padL - 6).attr('y', y(t) + 3).attr('font-size', 10)
+        .attr('text-anchor', 'end').attr('fill', 'var(--color-fg-muted)').text(Math.round(t));
+    });
+
+    const line = d3.line().x((r) => x(r.journee)).y((r) => y(r.position)).curve(d3.curveMonotoneX);
+    svg.append('path').datum(rows).attr('d', line).attr('fill', 'none')
+      .attr('stroke', 'var(--sv-blue)').attr('stroke-width', 2.5).attr('stroke-linecap', 'round');
+
+    rows.forEach((r) => {
+      const pt = svg.append('circle').attr('cx', x(r.journee)).attr('cy', y(r.position)).attr('r', 4)
+        .attr('fill', 'var(--sv-blue)').attr('stroke', 'var(--color-panel)').attr('stroke-width', 1.5);
+      pt.on('mousemove', (evt) => showTooltip(evt, 'Journée ' + r.journee, [
+        r.date,
+        'Position : ' + r.position + ' / ' + r.total_equipes,
+        r.points + ' points',
+      ]));
+      pt.on('mouseleave', hideTooltip);
+    });
+  }
+
   // ---- Buts/cartons par 90 min : deux tableaux, pastilles bien visibles ----
   function renderRatioTable(tableId, rows, field, colorVar, pillClass) {
     const tbody = document.querySelector('#' + tableId + ' tbody');
@@ -732,6 +776,7 @@
     renderProchainsMatchs(DATA);
     renderForme(DATA);
     renderTrajectoire(DATA);
+    renderClassementEvolution(DATA);
     renderRatioTable('sv-table-buts90', DATA.ratios, 'buts_par_90', 'var(--sv-blue)', 'sv-ratio-pill');
     renderRatioTable('sv-table-cartons90', DATA.ratios, 'cartons_par_90', 'var(--sv-yellow)', 'sv-ratio-pill cartons');
     renderRankedBars('sv-chart-buteurs', [...DATA.buteurs].sort((a, b) => b.buts_championnat - a.buts_championnat), 'buts_championnat', 'adversaires');
