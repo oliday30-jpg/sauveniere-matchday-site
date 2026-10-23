@@ -334,7 +334,7 @@
 
       <div class="sv-card">
         <h2>Cartons jaunes (championnat)</h2>
-        <p class="sv-note">Nombre de jaunes par joueur ; survolez une barre pour voir contre qui.</p>
+        <p class="sv-note">Nombre de jaunes par joueur.</p>
         <div class="sv-chart" id="sv-chart-cartons"></div>
       </div>
     </div>
@@ -441,14 +441,14 @@
       value.textContent = fmt(r[valueField]);
       row.appendChild(rank); row.appendChild(label); row.appendChild(track); row.appendChild(value);
       el.appendChild(row);
-      if (r[detailField]) {
+      if (detailField && r[detailField]) {
         const d = document.createElement('div');
         d.className = 'sv-bar-detail';
         d.textContent = r[detailField];
         el.appendChild(d);
+        row.addEventListener('mousemove', (evt) => showTooltip(evt, r.joueur, ['Adversaires : ' + r[detailField]]));
+        row.addEventListener('mouseleave', hideTooltip);
       }
-      row.addEventListener('mousemove', (evt) => showTooltip(evt, r.joueur, [r[detailField] ? ('Adversaires : ' + r[detailField]) : 'Détail indisponible']));
-      row.addEventListener('mouseleave', hideTooltip);
     });
   }
 
@@ -545,7 +545,7 @@
       dot.className = 'sv-dot';
       dot.style.background = r.statut === 'critical' ? 'var(--color-bad)' : 'var(--color-warn)';
       const text = document.createElement('span');
-      text.textContent = r.joueur + ' — ' + r.jaunes + ' jaune(s) — ' + (r.statut === 'critical' ? 'suspension déclenchée (à vérifier)' : 'à un carton de la suspension');
+      text.textContent = r.joueur + ' — ' + r.jaunes + ' jaune(s)';
       row.appendChild(dot); row.appendChild(text);
       el.appendChild(row);
     });
@@ -674,7 +674,7 @@
     renderRatioTable('sv-table-buts90', DATA.ratios, 'buts_par_90', 'var(--sv-blue)', 'sv-ratio-pill');
     renderRatioTable('sv-table-cartons90', DATA.ratios, 'cartons_par_90', 'var(--sv-yellow)', 'sv-ratio-pill cartons');
     renderRankedBars('sv-chart-buteurs', [...DATA.buteurs].sort((a, b) => b.buts_championnat - a.buts_championnat), 'buts_championnat', 'adversaires');
-    renderRankedBars('sv-chart-cartons', [...DATA.cartons].sort((a, b) => b.jaunes_championnat - a.jaunes_championnat), 'jaunes_championnat', 'adversaires');
+    renderRankedBars('sv-chart-cartons', [...DATA.cartons].sort((a, b) => b.jaunes_championnat - a.jaunes_championnat), 'jaunes_championnat', null);
     renderMinutes(DATA);
     const dom = DATA.domicile_exterieur.find((r) => r.lieu === 'Domicile') || { victoires: 0, nuls: 0, defaites: 0 };
     const ext = DATA.domicile_exterieur.find((r) => r.lieu === 'Extérieur') || { victoires: 0, nuls: 0, defaites: 0 };
