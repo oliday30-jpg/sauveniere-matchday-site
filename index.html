@@ -246,7 +246,7 @@
   .sv-forme-chip.D { background: var(--color-bad); }
   .sv-table-ratio th, .sv-table-ratio td { text-align: center; }
   .sv-table-ratio th:first-child, .sv-table-ratio td:first-child { text-align: left; }
-  .sv-table-ratio td:first-child { display: flex; align-items: center; gap: 8px; }
+  .sv-name-cell { display: flex; align-items: center; gap: 8px; }
   .sv-table-ratio td { padding: 8px 8px; }
   .sv-ratio-pill {
     display: inline-block; min-width: 3.4rem; padding: 4px 12px;
@@ -636,12 +636,15 @@
     sorted.forEach((r, i) => {
       const tr = document.createElement('tr');
       const tdName = document.createElement('td');
+      const nameCell = document.createElement('span');
+      nameCell.className = 'sv-name-cell';
       const rank = document.createElement('span');
       rank.className = 'sv-bar-rank' + (i < 3 ? '' : ' muted');
       rank.textContent = i + 1;
       const nameSpan = document.createElement('span');
       nameSpan.textContent = r.joueur;
-      tdName.appendChild(rank); tdName.appendChild(nameSpan);
+      nameCell.appendChild(rank); nameCell.appendChild(nameSpan);
+      tdName.appendChild(nameCell);
       const tdVal = document.createElement('td');
       const pill = document.createElement('span');
       pill.className = pillClass;
