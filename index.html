@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wall. Ass. Sauvenière — Statistiques</title>
+<meta name="description" content="Statistiques de la saison — Wall. Ass. Sauvenière, Équipe Première A.">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --color-fg: #0b0b0b;
+    --color-fg-muted: #52514e;
+    --color-bg: #f9f9f7;
+    --color-panel: #fcfcfb;
+    --color-border-line: #e1e0d9;
+    --color-ok: #0ca30c;
+    --color-warn: #fab219;
+    --color-bad: #d03b3b;
+    --font-anthropic-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-anthropic-serif: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --cds-gap-xs: 4px; --cds-gap-sm: 8px; --cds-gap-md: 16px; --cds-gap-lg: 24px;
+    --cds-pad-xs: 6px; --cds-pad-sm: 10px; --cds-pad-md: 16px; --cds-pad-lg: 20px;
+    --cds-radius: 10px;
+    --cds-font-size-caption: 12px; --cds-font-size-body: 14px;
+    --cds-font-size-heading: 17px; --cds-font-size-title: 26px;
+    --cds-font-weight-medium: 600;
+    --cds-surface-popover: var(--color-panel);
+    --cds-border: var(--color-border-line);
+    --cds-shadow-popover: 0 6px 20px rgba(0,0,0,.08);
+    --cds-dur-slow: 300ms;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --color-fg: #f0efec; --color-fg-muted: #c3c2b7;
+      --color-bg: #0d0d0d; --color-panel: #1a1a19;
+      --color-border-line: #2c2c2a;
+      --cds-shadow-popover: 0 6px 20px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --color-fg: #f0efec; --color-fg-muted: #c3c2b7;
+    --color-bg: #0d0d0d; --color-panel: #1a1a19;
+    --color-border-line: #2c2c2a;
+    --cds-shadow-popover: 0 6px 20px rgba(0,0,0,.4);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    padding: clamp(16px, 4vw, 40px);
+  }
+  #dash-root { max-width: 72rem; margin: 0 auto; }
+</style>
+<style>
+  .sv {
+    --sv-blue: #2a78d6;
+    --sv-blue-dark: #3987e5;
+    --sv-yellow: #eda100;
+    --sv-yellow-dark: #c98500;
+    display: flex;
+    flex-direction: column;
+    gap: var(--cds-gap-lg);
+    font-family: var(--font-anthropic-sans);
+    color: var(--color-fg);
+    position: relative;
+  }
+  .sv-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--cds-gap-sm);
+  }
+  .sv-header-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    text-align: center;
+  }
+  .sv-logo {
+    width: 200px;
+    height: 200px;
+    object-fit: contain;
+    flex: 0 0 auto;
+  }
+  .sv-eyebrow {
+    font-size: var(--cds-font-size-caption);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--sv-blue-dark);
+    font-weight: var(--cds-font-weight-medium);
+  }
+  .sv-title {
+    font-family: var(--font-anthropic-serif);
+    font-weight: 400;
+    font-size: var(--cds-font-size-title);
+    text-wrap: balance;
+    margin: 0;
+  }
+  .sv-hero {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+    gap: var(--cds-gap-md);
+  }
+  .sv-tile {
+    background: var(--color-panel);
+    border: 1px solid var(--color-border-line);
+    border-radius: var(--cds-radius);
+    padding: var(--cds-pad-md);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 2px;
+    position: relative;
+    overflow: hidden;
+  }
+  .sv-tile::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--sv-blue), var(--sv-yellow));
+  }
+  .sv-tile-label {
+    font-size: var(--cds-font-size-caption);
+    font-weight: var(--cds-font-weight-medium);
+    color: var(--color-fg-muted);
+  }
+  .sv-tile-value {
+    font-family: var(--font-anthropic-serif);
+    font-size: var(--cds-font-size-title);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .sv-tile-value.blue { color: var(--sv-blue-dark); }
+  .sv-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+    gap: var(--cds-gap-md);
+    align-items: start;
+  }
+  .sv-grid.wide { grid-template-columns: repeat(auto-fit, minmax(min(100%, 30rem), 1fr)); }
+  .sv-grid.align-stretch { align-items: stretch; }
+  .sv-grid.align-stretch .sv-card { height: 100%; }
+  #sv-chart-forme { display: flex; align-items: center; flex: 1 1 auto; }
+  .sv-card {
+    background: var(--color-panel);
+    border: 1px solid var(--color-border-line);
+    border-radius: var(--cds-radius);
+    padding: var(--cds-pad-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--cds-gap-sm);
+    min-width: 0;
+    transition: box-shadow .15s ease, border-color .15s ease;
+  }
+  .sv-card:hover {
+    box-shadow: var(--cds-shadow-popover);
+    border-color: color-mix(in srgb, var(--sv-blue) 30%, var(--color-border-line));
+  }
+  .sv-card h2 {
+    font-size: var(--cds-font-size-heading);
+    font-weight: var(--cds-font-weight-medium);
+    margin: 0;
+  }
+  .sv-card .sv-note {
+    font-size: var(--cds-font-size-caption);
+    color: var(--color-fg-muted);
+    margin-top: -4px;
+  }
+  .sv-chart { min-height: 1px; }
+  .sv-bar-row { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
+  .sv-bar-rank {
+    flex: 0 0 auto;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    font-weight: var(--cds-font-weight-medium);
+    background: var(--sv-yellow);
+    color: #2a1d00;
+  }
+  .sv-bar-rank.muted { background: var(--color-border-line); color: var(--color-fg-muted); }
+  .sv-bar-label {
+    width: 9.5rem;
+    flex: 0 0 auto;
+    font-size: var(--cds-font-size-caption);
+    color: var(--color-fg);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .sv-bar-track {
+    flex: 1 1 auto;
+    position: relative;
+    height: 22px;
+    min-width: 0;
+    background: color-mix(in srgb, var(--sv-blue) 8%, transparent);
+    border-radius: 10px;
+  }
+  .sv-bar-fill {
+    position: absolute; left: 0; top: 3px; height: 16px; border-radius: 8px;
+    background: linear-gradient(90deg, var(--sv-blue-dark), var(--sv-blue));
+    transition: width .4s ease;
+  }
+  .sv-bar-row:hover .sv-bar-fill { filter: brightness(1.1); }
+  .sv-bar-value {
+    flex: 0 0 auto; width: 2.6rem; text-align: right;
+    font-variant-numeric: tabular-nums; font-size: var(--cds-font-size-body);
+    font-weight: 700;
+    color: var(--color-fg);
+  }
+  .sv-bar-row.compact .sv-bar-track { height: 15px; }
+  .sv-bar-row.compact .sv-bar-fill { height: 10px; top: 2.5px; border-radius: 6px; }
+  .sv-bar-detail {
+    font-size: var(--cds-font-size-caption);
+    color: var(--color-fg-muted);
+    margin-left: calc(9.5rem + 36px);
+    margin-top: -4px;
+  }
+  .sv-legend { display: flex; gap: var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .sv-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  .sv-list { display: flex; flex-direction: column; gap: var(--cds-gap-xs); }
+  .sv-status-row {
+    display: flex; align-items: center; gap: 8px; font-size: var(--cds-font-size-body);
+    padding: 7px 10px; border-radius: 8px;
+    background: color-mix(in srgb, var(--color-fg) 4%, transparent);
+  }
+  .sv-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+  .sv-table { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-caption); }
+  .sv-table th { text-align: left; font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); padding: 4px 8px 6px 0; border-bottom: 1px solid var(--color-border-line); }
+  .sv-table td { padding: 5px 8px 5px 0; border-bottom: 1px solid var(--color-border-line); font-variant-numeric: tabular-nums; }
+  .sv-table tr:last-child td { border-bottom: none; }
+  .sv-table tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--color-fg) 3%, transparent); }
+  .sv-forme-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .sv-forme-chip {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px; color: #fff; flex: 0 0 auto;
+  }
+  .sv-forme-chip.V { background: var(--color-ok); }
+  .sv-forme-chip.N { background: var(--color-fg-muted); }
+  .sv-forme-chip.D { background: var(--color-bad); }
+  .sv-table-ratio th, .sv-table-ratio td { text-align: center; }
+  .sv-table-ratio th:first-child, .sv-table-ratio td:first-child { text-align: left; }
+  .sv-table-ratio td:first-child { display: flex; align-items: center; gap: 8px; }
+  .sv-table-ratio td { padding: 8px 8px; }
+  .sv-ratio-pill {
+    display: inline-block; min-width: 3.4rem; padding: 4px 12px;
+    border-radius: 999px; font-weight: 700; font-size: var(--cds-font-size-body);
+    font-variant-numeric: tabular-nums; color: #fff;
+  }
+  .sv-ratio-pill.cartons { color: #2a1d00; }
+  .sv-tooltip {
+    position: absolute; pointer-events: none; background: var(--cds-surface-popover);
+    border: 1px solid var(--cds-border); border-radius: var(--cds-radius);
+    box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-xs) var(--cds-pad-sm);
+    font-size: var(--cds-font-size-caption); max-width: 16rem; opacity: 0; transition: opacity .1s;
+    z-index: 5;
+  }
+  .sv-tooltip.show { opacity: 1; }
+  .sv-tooltip .sv-tt-title { font-weight: var(--cds-font-weight-medium); margin-bottom: 2px; }
+  .sv-footer { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); text-align: center; }
+  @media (max-width: 420px) {
+    .sv-logo { width: 72px; height: 72px; }
+    .sv-bar-label { width: 6.5rem; }
+    .sv-bar-detail { margin-left: calc(6.5rem + 36px); }
+  }
+</style>
+</head>
+<body>
+<div id="dash-root">
+  <div class="sv">
+    <div class="sv-header">
+      <img class="sv-logo" src="logo.png" alt="Logo Wall. Ass. Sauvenière">
+      <div class="sv-header-text">
+        <div class="sv-eyebrow">Wall. Ass. Sauvenière — Équipe Première A</div>
+        <h1 class="sv-title">Statistiques de la saison</h1>
+      </div>
+    </div>
+
+    <div class="sv-hero" id="sv-hero">
+      <div class="sv-tile"><div class="sv-tile-label">Position</div><div class="sv-tile-value blue" id="sv-hero-position">—</div></div>
+      <div class="sv-tile"><div class="sv-tile-label">Points</div><div class="sv-tile-value blue" id="sv-hero-points">—</div></div>
+      <div class="sv-tile"><div class="sv-tile-label">Joués (champ.)</div><div class="sv-tile-value blue" id="sv-hero-joues">—</div></div>
+      <div class="sv-tile"><div class="sv-tile-label">Buts marqués</div><div class="sv-tile-value blue" id="sv-hero-buts-pour">—</div></div>
+      <div class="sv-tile"><div class="sv-tile-label">Buts encaissés</div><div class="sv-tile-value blue" id="sv-hero-buts-contre">—</div></div>
+    </div>
+    <p class="sv-note" style="margin:0;">Dont 1 but contre son camp (adversaire, match du 04/10) compté dans les buts marqués mais non attribué à un joueur ci-dessous. La case « Joués (champ.) » ci-dessus ne compte que les matchs de championnat (hors coupe et amicaux) — voir la carte « Minutes jouées » plus bas pour une portée plus large.</p>
+
+    <div class="sv-grid wide align-stretch">
+      <div class="sv-card">
+        <h2>Forme récente</h2>
+        <p class="sv-note">Les 6 derniers matchs de championnat, du plus ancien (gauche) au plus récent (droite).</p>
+        <div class="sv-chart" id="sv-chart-forme"></div>
+      </div>
+
+      <div class="sv-card">
+        <h2>Trajectoire du goal-average</h2>
+        <p class="sv-note">Différence de buts cumulée (marqués − encaissés), championnat uniquement.</p>
+        <div class="sv-chart" id="sv-chart-trajectoire"></div>
+      </div>
+    </div>
+
+    <div class="sv-grid wide align-stretch">
+      <div class="sv-card">
+        <h2>Buts par 90 minutes</h2>
+        <p class="sv-note">Buts de championnat rapportés aux minutes jouées (×90). Minutes = toutes compétitions avec détail disponible (pas strictement le championnat).</p>
+        <table class="sv-table sv-table-ratio" id="sv-table-buts90">
+          <thead><tr><th>Joueur</th><th>Buts / 90 min</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="sv-card">
+        <h2>Cartons jaunes par 90 minutes</h2>
+        <p class="sv-note">Jaunes de championnat rapportés aux minutes jouées (×90). Minutes = toutes compétitions avec détail disponible (pas strictement le championnat).</p>
+        <table class="sv-table sv-table-ratio" id="sv-table-cartons90">
+          <thead><tr><th>Joueur</th><th>Jaunes / 90 min</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="sv-grid wide">
+      <div class="sv-card">
+        <h2>Buteurs (championnat)</h2>
+        <p class="sv-note">Nombre de buts par joueur ; survolez une barre pour voir contre qui.</p>
+        <div class="sv-chart" id="sv-chart-buteurs"></div>
+      </div>
+
+      <div class="sv-card">
+        <h2>Cartons jaunes (championnat)</h2>
+        <p class="sv-note">Nombre de jaunes par joueur ; survolez une barre pour voir contre qui.</p>
+        <div class="sv-chart" id="sv-chart-cartons"></div>
+      </div>
+    </div>
+
+    <div class="sv-card">
+      <h2>Minutes jouées</h2>
+      <p class="sv-note">Toutes compétitions avec détail disponible (championnat, coupe, amicaux) — à la différence de « Joués (champ.) » dans le bandeau du haut, qui ne compte que le championnat. Les 12 joueurs les plus utilisés. Un nom suivi d'un astérisque (*) a joué au moins un match dont les minutes ne sont pas comptabilisées ci-dessous (amical sans détail FFA exploitable, ou dépannage dans une autre équipe du club).</p>
+      <div class="sv-chart" id="sv-chart-minutes"></div>
+    </div>
+
+    <div class="sv-grid">
+      <div class="sv-card">
+        <h2>Domicile / Extérieur</h2>
+        <p class="sv-note">Championnat uniquement.</p>
+        <div class="sv-legend">
+          <span><span class="sv-swatch" style="background:var(--sv-blue)"></span>Domicile</span>
+          <span><span class="sv-swatch" style="background:var(--sv-yellow)"></span>Extérieur</span>
+        </div>
+        <div class="sv-chart" id="sv-chart-domext"></div>
+      </div>
+
+      <div class="sv-card">
+        <h2>Buts par tranche de 15 minutes</h2>
+        <p class="sv-note">Championnat uniquement.</p>
+        <div class="sv-legend">
+          <span><span class="sv-swatch" style="background:var(--sv-blue)"></span>Marqués</span>
+          <span><span class="sv-swatch" style="background:var(--sv-yellow)"></span>Encaissés</span>
+        </div>
+        <div class="sv-chart" id="sv-chart-periodes"></div>
+      </div>
+    </div>
+
+    <div class="sv-grid">
+      <div class="sv-card">
+        <h2>Joueurs à risque de suspension</h2>
+        <p class="sv-note">Cartons jaunes de championnat uniquement.</p>
+        <div class="sv-list" id="sv-risque-list"></div>
+      </div>
+
+      <div class="sv-card">
+        <h2>Efficacité des remplacements</h2>
+        <p class="sv-note" id="sv-remplacements-note">—</p>
+        <table class="sv-table" id="sv-remplacements-table">
+          <thead><tr><th>Joueur</th><th>Entrée</th><th>But</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <p class="sv-footer">Généré automatiquement depuis le classeur de suivi de saison — Wall. Ass. Sauvenière.</p>
+  </div>
+
+  <div class="sv-tooltip" id="sv-tooltip"></div>
+</div>
+
+<script>
+(function () {
+  const fmt = d3.format(',');
+  const tooltip = document.getElementById('sv-tooltip');
+  const root = document.querySelector('.sv');
+  root.style.position = 'relative';
+
+  function showTooltip(evt, titleText, lines) {
+    tooltip.innerHTML = '<div class="sv-tt-title"></div>';
+    tooltip.querySelector('.sv-tt-title').textContent = titleText;
+    lines.forEach((l) => {
+      const d = document.createElement('div');
+      d.textContent = l;
+      tooltip.appendChild(d);
+    });
+    const rootBox = root.getBoundingClientRect();
+    const x = evt.clientX - rootBox.left + 12;
+    const y = evt.clientY - rootBox.top + 12;
+    tooltip.style.left = x + 'px';
+    tooltip.style.top = y + 'px';
+    tooltip.classList.add('show');
+  }
+  function hideTooltip() { tooltip.classList.remove('show'); }
+
+  // ---- Buteurs / Cartons : barres horizontales classées, avec pastille de rang ----
+  function renderRankedBars(containerId, rows, valueField, detailField, maxRows) {
+    const el = document.getElementById(containerId);
+    el.innerHTML = '';
+    const data = rows.slice(0, maxRows || rows.length).filter((r) => (r[valueField] || 0) > 0);
+    if (!data.length) { el.innerHTML = '<p class="sv-note">Aucune donnée pour l’instant.</p>'; return; }
+    const max = d3.max(data, (r) => r[valueField]) || 1;
+    data.forEach((r, i) => {
+      const row = document.createElement('div');
+      row.className = 'sv-bar-row';
+      const rank = document.createElement('div');
+      rank.className = 'sv-bar-rank' + (i < 3 ? '' : ' muted');
+      rank.textContent = i + 1;
+      const label = document.createElement('div');
+      label.className = 'sv-bar-label';
+      label.textContent = r.joueur;
+      const track = document.createElement('div');
+      track.className = 'sv-bar-track';
+      const fill = document.createElement('div');
+      fill.className = 'sv-bar-fill';
+      fill.style.width = Math.max(4, (r[valueField] / max) * 100) + '%';
+      track.appendChild(fill);
+      const value = document.createElement('div');
+      value.className = 'sv-bar-value';
+      value.textContent = fmt(r[valueField]);
+      row.appendChild(rank); row.appendChild(label); row.appendChild(track); row.appendChild(value);
+      el.appendChild(row);
+      if (r[detailField]) {
+        const d = document.createElement('div');
+        d.className = 'sv-bar-detail';
+        d.textContent = r[detailField];
+        el.appendChild(d);
+      }
+      row.addEventListener('mousemove', (evt) => showTooltip(evt, r.joueur, [r[detailField] ? ('Adversaires : ' + r[detailField]) : 'Détail indisponible']));
+      row.addEventListener('mouseleave', hideTooltip);
+    });
+  }
+
+  function renderMinutes(DATA) {
+    const rows = [...DATA.usage].sort((a, b) => b.minutes - a.minutes).slice(0, 12);
+    const el = document.getElementById('sv-chart-minutes');
+    el.innerHTML = '';
+    const max = d3.max(rows, (r) => r.minutes) || 1;
+    rows.forEach((r, i) => {
+      const row = document.createElement('div');
+      row.className = 'sv-bar-row compact';
+      const rank = document.createElement('div');
+      rank.className = 'sv-bar-rank' + (i < 3 ? '' : ' muted');
+      rank.textContent = i + 1;
+      const label = document.createElement('div');
+      label.className = 'sv-bar-label';
+      label.textContent = r.joueur + (r.incomplet ? ' *' : '');
+      const track = document.createElement('div');
+      track.className = 'sv-bar-track';
+      const fill = document.createElement('div');
+      fill.className = 'sv-bar-fill';
+      fill.style.width = Math.max(4, (r.minutes / max) * 100) + '%';
+      track.appendChild(fill);
+      const value = document.createElement('div');
+      value.className = 'sv-bar-value';
+      value.textContent = fmt(r.minutes) + "'";
+      row.appendChild(rank); row.appendChild(label); row.appendChild(track); row.appendChild(value);
+      el.appendChild(row);
+      row.addEventListener('mousemove', (evt) => showTooltip(evt, r.joueur, [
+        r.minutes + ' minutes sur ' + r.matchs_comptes + '/' + r.matchs_total_comptage + ' matchs comptés',
+        r.titularisations + ' titularisation(s), ' + r.entrees + ' entrée(s) en jeu',
+      ]));
+      row.addEventListener('mouseleave', hideTooltip);
+    });
+  }
+
+  // ---- Domicile/Extérieur et Périodes : barres groupées à deux séries (bleu/jaune) ----
+  function renderGrouped(containerId, categories, seriesA, seriesB) {
+    const el = document.getElementById(containerId);
+    el.innerHTML = '';
+    const width = Math.max(240, el.clientWidth || 320);
+    const barGroupH = 60;
+    const barH = 16;
+    const height = categories.length * barGroupH + 24;
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${width} ${height}`);
+
+    const defs = svg.append('defs');
+    const gradBlue = defs.append('linearGradient').attr('id', containerId + '-grad-blue').attr('x1', '0%').attr('x2', '100%');
+    gradBlue.append('stop').attr('offset', '0%').attr('stop-color', 'var(--sv-blue-dark)');
+    gradBlue.append('stop').attr('offset', '100%').attr('stop-color', 'var(--sv-blue)');
+    const gradYellow = defs.append('linearGradient').attr('id', containerId + '-grad-yellow').attr('x1', '0%').attr('x2', '100%');
+    gradYellow.append('stop').attr('offset', '0%').attr('stop-color', 'var(--sv-yellow-dark)');
+    gradYellow.append('stop').attr('offset', '100%').attr('stop-color', 'var(--sv-yellow)');
+
+    const max = Math.max(d3.max(seriesA) || 0, d3.max(seriesB) || 0, 1);
+    const labelW = 92;
+    const chartW = width - labelW - 44;
+    const x = d3.scaleLinear().domain([0, max]).range([0, chartW]);
+
+    const gl = svg.append('g');
+    x.ticks(4).filter((t) => t > 0).forEach((t) => {
+      gl.append('line')
+        .attr('x1', labelW + x(t)).attr('x2', labelW + x(t))
+        .attr('y1', 4).attr('y2', height - 8)
+        .attr('stroke', 'var(--color-border-line)').attr('stroke-width', 1);
+    });
+
+    categories.forEach((cat, i) => {
+      const gy = i * barGroupH + 14;
+      svg.append('text').attr('x', 0).attr('y', gy + barH + 2).attr('font-size', 11)
+        .attr('font-weight', 500).attr('fill', 'var(--color-fg)').text(cat);
+      [[seriesA[i], `url(#${containerId}-grad-blue)`, 0], [seriesB[i], `url(#${containerId}-grad-yellow)`, barH + 6]].forEach(([val, fill, dy]) => {
+        const g = svg.append('g').attr('transform', `translate(${labelW},${gy + dy})`);
+        g.append('rect').attr('x', 0).attr('y', 0).attr('width', chartW).attr('height', barH)
+          .attr('rx', barH / 2).attr('fill', 'var(--color-border-line)').attr('opacity', 0.3);
+        g.append('rect').attr('x', 0).attr('y', 0).attr('width', Math.max(barH, x(val))).attr('height', barH)
+          .attr('rx', barH / 2).attr('fill', fill);
+        g.append('text').attr('x', Math.max(barH, x(val)) + 6).attr('y', barH - 3).attr('font-size', 11)
+          .attr('font-variant-numeric', 'tabular-nums').attr('fill', 'var(--color-fg-muted)')
+          .text(val);
+      });
+    });
+  }
+
+  // ---- Risque de suspension ----
+  function renderRisque(DATA) {
+    const el = document.getElementById('sv-risque-list');
+    el.innerHTML = '';
+    if (!DATA.risque.length) { el.innerHTML = '<p class="sv-note">Aucun joueur à 2 jaunes ou plus pour l’instant.</p>'; return; }
+    DATA.risque.forEach((r) => {
+      const row = document.createElement('div');
+      row.className = 'sv-status-row';
+      const dot = document.createElement('span');
+      dot.className = 'sv-dot';
+      dot.style.background = r.statut === 'critical' ? 'var(--color-bad)' : 'var(--color-warn)';
+      const text = document.createElement('span');
+      text.textContent = r.joueur + ' — ' + r.jaunes + ' jaune(s) — ' + (r.statut === 'critical' ? 'suspension déclenchée (à vérifier)' : 'à un carton de la suspension');
+      row.appendChild(dot); row.appendChild(text);
+      el.appendChild(row);
+    });
+  }
+
+  // ---- Efficacité des remplacements ----
+  function renderRemplacements(DATA) {
+    const subGoals = DATA.remplacements.length;
+    const totalGoals = DATA.buteurs.reduce((s, r) => s + (r.buts_championnat || 0), 0);
+    const pct = totalGoals ? Math.round((100 * subGoals) / totalGoals) : 0;
+    document.getElementById('sv-remplacements-note').textContent =
+      subGoals + ' but(s) marqué(s) par un remplaçant après son entrée en jeu, sur ' + totalGoals + ' au total (' + pct + ' %).';
+
+    const tbody = document.querySelector('#sv-remplacements-table tbody');
+    tbody.innerHTML = '';
+    DATA.remplacements.forEach((r) => {
+      const tr = document.createElement('tr');
+      const tdName = document.createElement('td'); tdName.textContent = r.joueur;
+      const tdIn = document.createElement('td'); tdIn.textContent = r.minute_entree;
+      const tdGoal = document.createElement('td'); tdGoal.textContent = r.minute_but;
+      tr.appendChild(tdName); tr.appendChild(tdIn); tr.appendChild(tdGoal);
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ---- Forme récente : pastilles V/N/D ----
+  function renderForme(DATA) {
+    const el = document.getElementById('sv-chart-forme');
+    el.innerHTML = '';
+    if (!DATA.forme.length) return;
+    const row = document.createElement('div');
+    row.className = 'sv-forme-row';
+    DATA.forme.forEach((r) => {
+      const chip = document.createElement('div');
+      chip.className = 'sv-forme-chip ' + r.resultat;
+      chip.textContent = r.resultat;
+      chip.addEventListener('mousemove', (evt) => showTooltip(evt, r.adversaire, [r.date + ' — ' + r.score]));
+      chip.addEventListener('mouseleave', hideTooltip);
+      row.appendChild(chip);
+    });
+    el.appendChild(row);
+  }
+
+  // ---- Trajectoire du goal-average : courbe cumulée ----
+  function renderTrajectoire(DATA) {
+    const el = document.getElementById('sv-chart-trajectoire');
+    el.innerHTML = '';
+    const rows = DATA.trajectoire;
+    if (!rows.length) return;
+    const width = Math.max(240, el.clientWidth || 320);
+    const height = 200;
+    const padL = 32, padR = 12, padT = 12, padB = 24;
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${width} ${height}`);
+    const x = d3.scaleLinear().domain([1, rows.length]).range([padL, width - padR]);
+    const yMax = Math.max(1, d3.max(rows, (r) => Math.abs(r.diff_cumule)));
+    const y = d3.scaleLinear().domain([-yMax, yMax]).range([height - padB, padT]);
+
+    svg.append('line').attr('x1', padL).attr('x2', width - padR).attr('y1', y(0)).attr('y2', y(0))
+      .attr('stroke', 'var(--color-border-line)').attr('stroke-width', 1);
+    y.ticks(4).forEach((t) => {
+      svg.append('text').attr('x', padL - 6).attr('y', y(t) + 3).attr('font-size', 10)
+        .attr('text-anchor', 'end').attr('fill', 'var(--color-fg-muted)').text(t > 0 ? '+' + t : t);
+    });
+
+    const line = d3.line().x((r) => x(r.journee)).y((r) => y(r.diff_cumule)).curve(d3.curveMonotoneX);
+    svg.append('path').datum(rows).attr('d', line).attr('fill', 'none')
+      .attr('stroke', 'var(--sv-blue)').attr('stroke-width', 2.5).attr('stroke-linecap', 'round');
+
+    rows.forEach((r) => {
+      const pt = svg.append('circle').attr('cx', x(r.journee)).attr('cy', y(r.diff_cumule)).attr('r', 4)
+        .attr('fill', r.diff_cumule >= 0 ? 'var(--sv-blue)' : 'var(--color-bad)')
+        .attr('stroke', 'var(--color-panel)').attr('stroke-width', 1.5);
+      pt.on('mousemove', (evt) => showTooltip(evt, 'J' + r.journee + ' — ' + r.adversaire, [
+        r.date,
+        'Diff. cumulée : ' + (r.diff_cumule >= 0 ? '+' : '') + r.diff_cumule,
+        r.bp_cumule + ' marqués / ' + r.bc_cumule + ' encaissés',
+      ]));
+      pt.on('mouseleave', hideTooltip);
+    });
+  }
+
+  // ---- Buts/cartons par 90 min : deux tableaux, pastilles bien visibles ----
+  function renderRatioTable(tableId, rows, field, colorVar, pillClass) {
+    const tbody = document.querySelector('#' + tableId + ' tbody');
+    tbody.innerHTML = '';
+    const sorted = rows.filter((r) => r[field] > 0).sort((a, b) => b[field] - a[field]);
+    const maxVal = d3.max(sorted, (r) => r[field]) || 1;
+    sorted.forEach((r, i) => {
+      const tr = document.createElement('tr');
+      const tdName = document.createElement('td');
+      const rank = document.createElement('span');
+      rank.className = 'sv-bar-rank' + (i < 3 ? '' : ' muted');
+      rank.textContent = i + 1;
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = r.joueur;
+      tdName.appendChild(rank); tdName.appendChild(nameSpan);
+      const tdVal = document.createElement('td');
+      const pill = document.createElement('span');
+      pill.className = pillClass;
+      const t = Math.min(1, r[field] / maxVal);
+      pill.style.background = `color-mix(in srgb, ${colorVar} ${20 + t * 80}%, var(--color-border-line))`;
+      pill.textContent = r[field].toFixed(2);
+      tdVal.appendChild(pill);
+      tr.appendChild(tdName); tr.appendChild(tdVal);
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderHero(DATA) {
+    if (!DATA.classement.length) return;
+    const r = DATA.classement[0];
+    document.getElementById('sv-hero-position').textContent = r.position ?? '—';
+    document.getElementById('sv-hero-points').textContent = r.points ?? '—';
+    document.getElementById('sv-hero-joues').textContent = r.joues ?? '—';
+    document.getElementById('sv-hero-buts-pour').textContent = r.buts_pour ?? '—';
+    document.getElementById('sv-hero-buts-contre').textContent = r.buts_contre ?? '—';
+  }
+
+  function renderAll(DATA) {
+    renderHero(DATA);
+    renderForme(DATA);
+    renderTrajectoire(DATA);
+    renderRatioTable('sv-table-buts90', DATA.ratios, 'buts_par_90', 'var(--sv-blue)', 'sv-ratio-pill');
+    renderRatioTable('sv-table-cartons90', DATA.ratios, 'cartons_par_90', 'var(--sv-yellow)', 'sv-ratio-pill cartons');
+    renderRankedBars('sv-chart-buteurs', [...DATA.buteurs].sort((a, b) => b.buts_championnat - a.buts_championnat), 'buts_championnat', 'adversaires');
+    renderRankedBars('sv-chart-cartons', [...DATA.cartons].sort((a, b) => b.jaunes_championnat - a.jaunes_championnat), 'jaunes_championnat', 'adversaires');
+    renderMinutes(DATA);
+    const dom = DATA.domicile_exterieur.find((r) => r.lieu === 'Domicile') || { victoires: 0, nuls: 0, defaites: 0 };
+    const ext = DATA.domicile_exterieur.find((r) => r.lieu === 'Extérieur') || { victoires: 0, nuls: 0, defaites: 0 };
+    renderGrouped('sv-chart-domext', ['Victoires', 'Nuls', 'Défaites'], [dom.victoires, dom.nuls, dom.defaites], [ext.victoires, ext.nuls, ext.defaites]);
+    renderGrouped('sv-chart-periodes', DATA.periodes.map((r) => r.periode), DATA.periodes.map((r) => r.buts_marques), DATA.periodes.map((r) => r.buts_encaisses));
+    renderRisque(DATA);
+    renderRemplacements(DATA);
+  }
+
+  fetch('data.json').then((r) => r.json()).then((DATA) => {
+    renderAll(DATA);
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => renderAll(DATA), 150);
+    });
+  }).catch((err) => {
+    document.getElementById('dash-root').innerHTML = '<p class="sv-note">Erreur de chargement des statistiques : ' + err + '</p>';
+  });
+})();
+</script>
+</body>
+</html>
