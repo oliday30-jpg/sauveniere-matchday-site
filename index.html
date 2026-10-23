@@ -341,6 +341,19 @@
       <div class="sv-chart" id="sv-chart-classement"></div>
     </div>
 
+    <div class="sv-card">
+      <h2>Séries en cours</h2>
+      <p class="sv-note">Calculées sur les matchs de championnat, du plus récent en remontant.</p>
+      <div class="sv-hero" id="sv-series"></div>
+    </div>
+
+    <div class="sv-card">
+      <h2>Fiche joueur</h2>
+      <p class="sv-note">Buts, cartons et minutes de championnat (minutes = toutes compétitions avec détail disponible).</p>
+      <select id="sv-player-select" style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid var(--color-border-line); background:var(--color-panel); color:var(--color-fg); font-family:var(--font-anthropic-sans); font-size:var(--cds-font-size-body); margin-bottom:8px;"></select>
+      <div class="sv-hero" id="sv-player-card"></div>
+    </div>
+
     <div class="sv-grid wide align-stretch">
       <div class="sv-card">
         <h2>Buts par 90 minutes</h2>
@@ -769,6 +782,81 @@
     });
   }
 
+  // ---- Séries en cours : calculées depuis la forme (championnat, du plus récent en remontant) ----
+  function renderSeries(DATA) {
+    const el = document.getElementById('sv-series');
+    el.innerHTML = '';
+    const rows = DATA.forme || [];
+    if (!rows.length) return;
+    let winStreak = 0;
+    for (let i = rows.length - 1; i >= 0; i--) { if (rows[i].resultat === 'V') winStreak++; else break; }
+    let unbeatenStreak = 0;
+    for (let i = rows.length - 1; i >= 0; i--) { if (rows[i].resultat !== 'D') unbeatenStreak++; else break; }
+    let cleanSheetStreak = 0;
+    for (let i = rows.length - 1; i >= 0; i--) {
+      const bc = parseInt((rows[i].score || '').split('-')[1], 10);
+      if (bc === 0) cleanSheetStreak++; else break;
+    }
+    const totalCleanSheets = rows.filter((r) => parseInt((r.score || '').split('-')[1], 10) === 0).length;
+
+    [
+      ['Victoires de suite', winStreak],
+      ['Invincibilité (matchs)', unbeatenStreak],
+      ['Clean sheets de suite', cleanSheetStreak],
+      ['Clean sheets (saison)', totalCleanSheets],
+    ].forEach(([label, value]) => {
+      const tile = document.createElement('div');
+      tile.className = 'sv-tile';
+      const l = document.createElement('div'); l.className = 'sv-tile-label'; l.textContent = label;
+      const v = document.createElement('div'); v.className = 'sv-tile-value blue'; v.textContent = value;
+      tile.appendChild(l); tile.appendChild(v);
+      el.appendChild(tile);
+    });
+  }
+
+  // ---- Fiche joueur : sélecteur + agrégation depuis les datasets existants ----
+  function setupPlayerCard(DATA) {
+    const select = document.getElementById('sv-player-select');
+    const names = new Set();
+    (DATA.usage || []).forEach((r) => names.add(r.joueur));
+    (DATA.buteurs || []).forEach((r) => names.add(r.joueur));
+    (DATA.cartons || []).forEach((r) => names.add(r.joueur));
+    const sorted = [...names].sort((a, b) => a.localeCompare(b, 'fr'));
+    select.innerHTML = '';
+    sorted.forEach((name) => {
+      const opt = document.createElement('option');
+      opt.value = name; opt.textContent = name;
+      select.appendChild(opt);
+    });
+
+    function renderPlayer(name) {
+      const el = document.getElementById('sv-player-card');
+      el.innerHTML = '';
+      const usage = (DATA.usage || []).find((r) => r.joueur === name) || {};
+      const buteur = (DATA.buteurs || []).find((r) => r.joueur === name) || {};
+      const carton = (DATA.cartons || []).find((r) => r.joueur === name) || {};
+      const ratio = (DATA.ratios || []).find((r) => r.joueur === name) || {};
+      [
+        ['Matchs joués', usage.matchs_joues ?? '—'],
+        ['Minutes jouées', usage.minutes ?? '—'],
+        ['Buts (champ.)', buteur.buts_championnat ?? 0],
+        ['Jaunes (champ.)', carton.jaunes_championnat ?? 0],
+        ['Buts / 90 min', ratio.buts_par_90 ?? 0],
+        ['Jaunes / 90 min', ratio.cartons_par_90 ?? 0],
+      ].forEach(([label, value]) => {
+        const tile = document.createElement('div');
+        tile.className = 'sv-tile';
+        const l = document.createElement('div'); l.className = 'sv-tile-label'; l.textContent = label;
+        const v = document.createElement('div'); v.className = 'sv-tile-value blue'; v.textContent = value;
+        tile.appendChild(l); tile.appendChild(v);
+        el.appendChild(tile);
+      });
+    }
+
+    select.addEventListener('change', () => renderPlayer(select.value));
+    if (sorted.length) { select.value = sorted[0]; renderPlayer(sorted[0]); }
+  }
+
   // ---- Buts/cartons par 90 min : deux tableaux, pastilles bien visibles ----
   function renderRatioTable(tableId, rows, field, colorVar, pillClass) {
     const tbody = document.querySelector('#' + tableId + ' tbody');
@@ -815,6 +903,7 @@
     renderForme(DATA);
     renderTrajectoire(DATA);
     renderClassementEvolution(DATA);
+    renderSeries(DATA);
     renderRatioTable('sv-table-buts90', DATA.ratios, 'buts_par_90', 'var(--sv-blue)', 'sv-ratio-pill');
     renderRatioTable('sv-table-cartons90', DATA.ratios, 'cartons_par_90', 'var(--sv-yellow)', 'sv-ratio-pill cartons');
     renderRankedBars('sv-chart-buteurs', [...DATA.buteurs].sort((a, b) => b.buts_championnat - a.buts_championnat), 'buts_championnat', 'adversaires');
@@ -830,6 +919,7 @@
 
   fetch('data.json').then((r) => r.json()).then((DATA) => {
     renderAll(DATA);
+    setupPlayerCard(DATA);
     let resizeTimer;
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
