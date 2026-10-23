@@ -235,6 +235,20 @@
   .sv-table td { padding: 5px 8px 5px 0; border-bottom: 1px solid var(--color-border-line); font-variant-numeric: tabular-nums; }
   .sv-table tr:last-child td { border-bottom: none; }
   .sv-table tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--color-fg) 3%, transparent); }
+  .sv-next-match {
+    display: flex; flex-direction: column; gap: 4px;
+    padding: var(--cds-pad-md);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--sv-blue) 10%, transparent), color-mix(in srgb, var(--sv-yellow) 8%, transparent));
+    border-radius: var(--cds-radius);
+  }
+  .sv-next-match-date { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); text-transform: capitalize; }
+  .sv-next-match-vs { font-family: var(--font-anthropic-serif); font-size: var(--cds-font-size-heading); font-weight: 700; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .sv-next-match-meta { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .sv-badge-lieu {
+    display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 700;
+    background: var(--sv-blue); color: #fff; flex: 0 0 auto;
+  }
+  .sv-badge-lieu.ext { background: var(--sv-yellow); color: #2a1d00; }
   .sv-forme-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .sv-forme-chip {
     width: 36px; height: 36px; border-radius: 50%;
@@ -290,6 +304,12 @@
       <div class="sv-tile"><div class="sv-tile-label">Buts encaissés</div><div class="sv-tile-value blue" id="sv-hero-buts-contre">—</div></div>
     </div>
     <p class="sv-note" style="margin:0;">Dont 1 but contre son camp (adversaire, match du 04/10) compté dans les buts marqués mais non attribué à un joueur ci-dessous. La case « Joués (champ.) » ci-dessus ne compte que les matchs de championnat (hors coupe et amicaux) — voir la carte « Minutes jouées » plus bas pour une portée plus large.</p>
+
+    <div class="sv-card" id="sv-card-prochain">
+      <h2>Prochain match</h2>
+      <div class="sv-next-match" id="sv-next-match"></div>
+      <div class="sv-list" id="sv-next-matches-more"></div>
+    </div>
 
     <div class="sv-grid wide align-stretch">
       <div class="sv-card">
@@ -571,6 +591,43 @@
     });
   }
 
+  // ---- Prochain(s) match(s) ----
+  function renderProchainsMatchs(DATA) {
+    const card = document.getElementById('sv-card-prochain');
+    const list = DATA.prochains_matchs || [];
+    if (!list.length) { card.style.display = 'none'; return; }
+    card.style.display = '';
+    const next = list[0];
+    const el = document.getElementById('sv-next-match');
+    el.innerHTML = '';
+    const dateEl = document.createElement('div');
+    dateEl.className = 'sv-next-match-date';
+    dateEl.textContent = next.date_fr + (next.heure ? ' — ' + next.heure : '');
+    const vsEl = document.createElement('div');
+    vsEl.className = 'sv-next-match-vs';
+    const badge = document.createElement('span');
+    badge.className = 'sv-badge-lieu' + (next.lieu === 'Extérieur' ? ' ext' : '');
+    badge.textContent = next.lieu;
+    const vsText = document.createElement('span');
+    vsText.textContent = (next.lieu === 'Domicile' ? 'vs ' : '@ ') + next.adversaire;
+    vsEl.appendChild(badge); vsEl.appendChild(vsText);
+    const metaEl = document.createElement('div');
+    metaEl.className = 'sv-next-match-meta';
+    metaEl.textContent = next.competition || '';
+    el.appendChild(dateEl); el.appendChild(vsEl); el.appendChild(metaEl);
+
+    const more = document.getElementById('sv-next-matches-more');
+    more.innerHTML = '';
+    list.slice(1).forEach((m) => {
+      const row = document.createElement('div');
+      row.className = 'sv-status-row';
+      const text = document.createElement('span');
+      text.textContent = m.date_fr + ' — ' + (m.lieu === 'Domicile' ? 'vs ' : '@ ') + m.adversaire;
+      row.appendChild(text);
+      more.appendChild(row);
+    });
+  }
+
   // ---- Forme récente : pastilles V/N/D ----
   function renderForme(DATA) {
     const el = document.getElementById('sv-chart-forme');
@@ -669,6 +726,7 @@
 
   function renderAll(DATA) {
     renderHero(DATA);
+    renderProchainsMatchs(DATA);
     renderForme(DATA);
     renderTrajectoire(DATA);
     renderRatioTable('sv-table-buts90', DATA.ratios, 'buts_par_90', 'var(--sv-blue)', 'sv-ratio-pill');
