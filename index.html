@@ -348,6 +348,12 @@
     </div>
 
     <div class="sv-card">
+      <h2>Faits marquants de la saison</h2>
+      <p class="sv-note">Championnat uniquement, calculés sur tous les matchs joués.</p>
+      <div class="sv-list" id="sv-faits-marquants"></div>
+    </div>
+
+    <div class="sv-card">
       <h2>Tendance récente</h2>
       <p class="sv-note">Buts et cartons sur les 3 derniers matchs de championnat, comparés au total de la saison — pour repérer qui est en forme ou sur-sollicité.</p>
       <table class="sv-table" id="sv-table-tendance">
@@ -841,6 +847,44 @@
     renderRankedBars('sv-chart-postes', rows, 'minutes', null);
   }
 
+  // ---- Faits marquants de la saison : calculés depuis la forme (championnat) ----
+  function _fmtDateCourte(iso) {
+    const [y, m, d] = (iso || '').split('-');
+    return d && m ? `${d}/${m}/${y}` : iso;
+  }
+  function renderFaitsMarquants(DATA) {
+    const el = document.getElementById('sv-faits-marquants');
+    el.innerHTML = '';
+    const rows = (DATA.forme || []).map((r) => {
+      const [bp, bc] = (r.score || '0-0').split('-').map((x) => parseInt(x, 10));
+      return { ...r, bp, bc, diff: bp - bc, total: bp + bc };
+    });
+    if (!rows.length) return;
+
+    const victoires = rows.filter((r) => r.resultat === 'V');
+    const defaites = rows.filter((r) => r.resultat === 'D');
+    const faits = [];
+    if (victoires.length) {
+      const best = victoires.reduce((a, b) => (b.diff > a.diff ? b : a));
+      faits.push(`🏆 Plus large victoire : ${best.score} contre ${best.adversaire} (${_fmtDateCourte(best.date)})`);
+    }
+    if (defaites.length) {
+      const worst = defaites.reduce((a, b) => (b.diff < a.diff ? b : a));
+      faits.push(`📉 Plus lourde défaite : ${worst.score} contre ${worst.adversaire} (${_fmtDateCourte(worst.date)})`);
+    }
+    const prolifique = rows.reduce((a, b) => (b.total > a.total ? b : a));
+    faits.push(`⚽ Match le plus prolifique : ${prolifique.score} contre ${prolifique.adversaire} (${_fmtDateCourte(prolifique.date)}) — ${prolifique.total} buts au total`);
+
+    faits.forEach((text) => {
+      const row = document.createElement('div');
+      row.className = 'sv-status-row';
+      const span = document.createElement('span');
+      span.textContent = text;
+      row.appendChild(span);
+      el.appendChild(row);
+    });
+  }
+
   // ---- Tendance récente : buts/jaunes des 3 derniers matchs vs saison ----
   function renderTendance(DATA) {
     const tbody = document.querySelector('#sv-table-tendance tbody');
@@ -951,6 +995,7 @@
     renderTrajectoire(DATA);
     renderClassementEvolution(DATA);
     renderSeries(DATA);
+    renderFaitsMarquants(DATA);
     renderTendance(DATA);
     renderRatioTable('sv-table-buts90', DATA.ratios, 'buts_par_90', 'var(--sv-blue)', 'sv-ratio-pill');
     renderRatioTable('sv-table-cartons90', DATA.ratios, 'cartons_par_90', 'var(--sv-yellow)', 'sv-ratio-pill cartons');
