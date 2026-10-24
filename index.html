@@ -447,8 +447,9 @@
       <div class="sv-card">
         <h2>Efficacité des remplacements</h2>
         <p class="sv-note" id="sv-remplacements-note">—</p>
+        <p class="sv-note">Classés par nombre d'entrées suivies d'un but, puis par rapidité d'impact (écart moyen entrée → but, le plus court en premier).</p>
         <table class="sv-table" id="sv-remplacements-table">
-          <thead><tr><th>Joueur</th><th>Entrée</th><th>But</th></tr></thead>
+          <thead><tr><th>Joueur</th><th>Entrées efficaces</th><th>Écart moyen</th><th>Détail</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -634,12 +635,35 @@
 
     const tbody = document.querySelector('#sv-remplacements-table tbody');
     tbody.innerHTML = '';
+
+    const parseMin = (v) => parseInt(String(v).replace("'", ''), 10);
+    const parNom = {};
     DATA.remplacements.forEach((r) => {
+      const entree = parseMin(r.minute_entree);
+      const but = parseMin(r.minute_but);
+      const ecart = (Number.isFinite(entree) && Number.isFinite(but)) ? but - entree : null;
+      const p = parNom[r.joueur] || (parNom[r.joueur] = { joueur: r.joueur, instances: [] });
+      p.instances.push({ entree: r.minute_entree, but: r.minute_but, ecart });
+    });
+
+    const joueurs = Object.values(parNom).map((p) => {
+      const ecarts = p.instances.map((i) => i.ecart).filter((e) => e !== null);
+      const ecartMoyen = ecarts.length ? ecarts.reduce((a, b) => a + b, 0) / ecarts.length : null;
+      return { ...p, count: p.instances.length, ecartMoyen };
+    });
+    joueurs.sort((a, b) => b.count - a.count || (a.ecartMoyen ?? 999) - (b.ecartMoyen ?? 999));
+
+    joueurs.forEach((p) => {
       const tr = document.createElement('tr');
-      const tdName = document.createElement('td'); tdName.textContent = r.joueur;
-      const tdIn = document.createElement('td'); tdIn.textContent = r.minute_entree;
-      const tdGoal = document.createElement('td'); tdGoal.textContent = r.minute_but;
-      tr.appendChild(tdName); tr.appendChild(tdIn); tr.appendChild(tdGoal);
+      const tdName = document.createElement('td'); tdName.textContent = p.joueur;
+      const tdCount = document.createElement('td'); tdCount.textContent = p.count;
+      const tdEcart = document.createElement('td');
+      tdEcart.textContent = p.ecartMoyen !== null ? Math.round(p.ecartMoyen * 10) / 10 + " min" : '—';
+      const tdDetail = document.createElement('td');
+      tdDetail.style.fontSize = 'var(--cds-font-size-caption)';
+      tdDetail.style.color = 'var(--color-fg-muted)';
+      tdDetail.textContent = p.instances.map((i) => i.entree + '→' + i.but).join(', ');
+      tr.appendChild(tdName); tr.appendChild(tdCount); tr.appendChild(tdEcart); tr.appendChild(tdDetail);
       tbody.appendChild(tr);
     });
   }
