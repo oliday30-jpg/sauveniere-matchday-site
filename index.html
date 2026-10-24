@@ -348,6 +348,15 @@
     </div>
 
     <div class="sv-card">
+      <h2>Tendance récente</h2>
+      <p class="sv-note">Buts et cartons sur les 3 derniers matchs de championnat, comparés au total de la saison — pour repérer qui est en forme ou sur-sollicité.</p>
+      <table class="sv-table" id="sv-table-tendance">
+        <thead><tr><th>Joueur</th><th>Buts (3 derniers)</th><th>Buts (saison)</th><th>Jaunes (3 derniers)</th><th>Jaunes (saison)</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="sv-card">
       <h2>Fiche joueur</h2>
       <p class="sv-note">Buts, cartons et minutes de championnat (minutes = toutes compétitions avec détail disponible).</p>
       <select id="sv-player-select" style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid var(--color-border-line); background:var(--color-panel); color:var(--color-fg); font-family:var(--font-anthropic-sans); font-size:var(--cds-font-size-body); margin-bottom:8px;"></select>
@@ -814,6 +823,25 @@
     });
   }
 
+  // ---- Tendance récente : buts/jaunes des 3 derniers matchs vs saison ----
+  function renderTendance(DATA) {
+    const tbody = document.querySelector('#sv-table-tendance tbody');
+    tbody.innerHTML = '';
+    const rows = DATA.tendance_recente || [];
+    if (!rows.length) return;
+    [...rows].sort((a, b) => b.buts_recent - a.buts_recent || b.jaunes_recent - a.jaunes_recent).forEach((r) => {
+      const buteur = (DATA.buteurs || []).find((b) => b.joueur === r.joueur) || {};
+      const carton = (DATA.cartons || []).find((c) => c.joueur === r.joueur) || {};
+      const tr = document.createElement('tr');
+      [r.joueur, r.buts_recent, buteur.buts_championnat ?? 0, r.jaunes_recent, carton.jaunes_championnat ?? 0].forEach((val) => {
+        const td = document.createElement('td');
+        td.textContent = val;
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+  }
+
   // ---- Fiche joueur : sélecteur + agrégation depuis les datasets existants ----
   function setupPlayerCard(DATA) {
     const select = document.getElementById('sv-player-select');
@@ -904,6 +932,7 @@
     renderTrajectoire(DATA);
     renderClassementEvolution(DATA);
     renderSeries(DATA);
+    renderTendance(DATA);
     renderRatioTable('sv-table-buts90', DATA.ratios, 'buts_par_90', 'var(--sv-blue)', 'sv-ratio-pill');
     renderRatioTable('sv-table-cartons90', DATA.ratios, 'cartons_par_90', 'var(--sv-yellow)', 'sv-ratio-pill cartons');
     renderRankedBars('sv-chart-buteurs', [...DATA.buteurs].sort((a, b) => b.buts_championnat - a.buts_championnat), 'buts_championnat', 'adversaires');
