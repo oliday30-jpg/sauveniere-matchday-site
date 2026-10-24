@@ -403,6 +403,12 @@
       <div class="sv-chart" id="sv-chart-minutes"></div>
     </div>
 
+    <div class="sv-card">
+      <h2>Minutes par poste</h2>
+      <p class="sv-note">Total des minutes jouées, regroupées par poste (saisi manuellement par le club).</p>
+      <div class="sv-chart" id="sv-chart-postes"></div>
+    </div>
+
     <div class="sv-grid">
       <div class="sv-card">
         <h2>Domicile / Extérieur</h2>
@@ -823,6 +829,18 @@
     });
   }
 
+  // ---- Minutes par poste : agrégation côté client depuis usage[].poste ----
+  function renderMinutesParPoste(DATA) {
+    const totals = {};
+    (DATA.usage || []).forEach((r) => {
+      if (!r.poste) return;
+      totals[r.poste] = (totals[r.poste] || 0) + (r.minutes || 0);
+    });
+    const rows = Object.entries(totals).map(([joueur, minutes]) => ({ joueur, minutes }));
+    rows.sort((a, b) => b.minutes - a.minutes);
+    renderRankedBars('sv-chart-postes', rows, 'minutes', null);
+  }
+
   // ---- Tendance récente : buts/jaunes des 3 derniers matchs vs saison ----
   function renderTendance(DATA) {
     const tbody = document.querySelector('#sv-table-tendance tbody');
@@ -865,6 +883,7 @@
       const carton = (DATA.cartons || []).find((r) => r.joueur === name) || {};
       const ratio = (DATA.ratios || []).find((r) => r.joueur === name) || {};
       [
+        ['Poste', usage.poste ?? '—'],
         ['Matchs joués', usage.matchs_joues ?? '—'],
         ['Minutes jouées', usage.minutes ?? '—'],
         ['Buts (champ.)', buteur.buts_championnat ?? 0],
@@ -938,6 +957,7 @@
     renderRankedBars('sv-chart-buteurs', [...DATA.buteurs].sort((a, b) => b.buts_championnat - a.buts_championnat), 'buts_championnat', 'adversaires');
     renderRankedBars('sv-chart-cartons', [...DATA.cartons].sort((a, b) => b.jaunes_championnat - a.jaunes_championnat), 'jaunes_championnat', null);
     renderMinutes(DATA);
+    renderMinutesParPoste(DATA);
     const dom = DATA.domicile_exterieur.find((r) => r.lieu === 'Domicile') || { victoires: 0, nuls: 0, defaites: 0 };
     const ext = DATA.domicile_exterieur.find((r) => r.lieu === 'Extérieur') || { victoires: 0, nuls: 0, defaites: 0 };
     renderGrouped('sv-chart-domext', ['Victoires', 'Nuls', 'Défaites'], [dom.victoires, dom.nuls, dom.defaites], [ext.victoires, ext.nuls, ext.defaites]);
