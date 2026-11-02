@@ -1,0 +1,1053 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wall. Ass. Sauvenière — Statistiques</title>
+<meta name="description" content="Statistiques de la saison — Wall. Ass. Sauvenière, Équipe Première A.">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --color-fg: #0b0b0b;
+    --color-fg-muted: #52514e;
+    --color-bg: #f9f9f7;
+    --color-panel: #fcfcfb;
+    --color-border-line: #e1e0d9;
+    --color-ok: #0ca30c;
+    --color-warn: #fab219;
+    --color-bad: #d03b3b;
+    --font-anthropic-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-anthropic-serif: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --cds-gap-xs: 4px; --cds-gap-sm: 8px; --cds-gap-md: 16px; --cds-gap-lg: 24px;
+    --cds-pad-xs: 6px; --cds-pad-sm: 10px; --cds-pad-md: 16px; --cds-pad-lg: 20px;
+    --cds-radius: 10px;
+    --cds-font-size-caption: 12px; --cds-font-size-body: 14px;
+    --cds-font-size-heading: 17px; --cds-font-size-title: 26px;
+    --cds-font-weight-medium: 600;
+    --cds-surface-popover: var(--color-panel);
+    --cds-border: var(--color-border-line);
+    --cds-shadow-popover: 0 6px 20px rgba(0,0,0,.08);
+    --cds-dur-slow: 300ms;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --color-fg: #f0efec; --color-fg-muted: #c3c2b7;
+      --color-bg: #0d0d0d; --color-panel: #1a1a19;
+      --color-border-line: #2c2c2a;
+      --cds-shadow-popover: 0 6px 20px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --color-fg: #f0efec; --color-fg-muted: #c3c2b7;
+    --color-bg: #0d0d0d; --color-panel: #1a1a19;
+    --color-border-line: #2c2c2a;
+    --cds-shadow-popover: 0 6px 20px rgba(0,0,0,.4);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    padding: clamp(16px, 4vw, 40px);
+  }
+  #dash-root { max-width: 72rem; margin: 0 auto; }
+</style>
+<style>
+  .sv {
+    --sv-blue: #2a78d6;
+    --sv-blue-dark: #3987e5;
+    --sv-yellow: #eda100;
+    --sv-yellow-dark: #c98500;
+    display: flex;
+    flex-direction: column;
+    gap: var(--cds-gap-lg);
+    font-family: var(--font-anthropic-sans);
+    color: var(--color-fg);
+    position: relative;
+  }
+  .sv-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--cds-gap-sm);
+  }
+  .sv-header-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    text-align: center;
+  }
+  .sv-logo {
+    width: 200px;
+    height: 200px;
+    object-fit: contain;
+    flex: 0 0 auto;
+  }
+  .sv-eyebrow {
+    font-size: var(--cds-font-size-caption);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--sv-blue-dark);
+    font-weight: var(--cds-font-weight-medium);
+  }
+  .sv-title {
+    font-family: var(--font-anthropic-serif);
+    font-weight: 400;
+    font-size: var(--cds-font-size-title);
+    text-wrap: balance;
+    margin: 0;
+  }
+  .sv-hero {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+    gap: var(--cds-gap-md);
+  }
+  .sv-tile {
+    background: var(--color-panel);
+    border: 1px solid var(--color-border-line);
+    border-radius: var(--cds-radius);
+    padding: var(--cds-pad-md);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 2px;
+    position: relative;
+    overflow: hidden;
+  }
+  .sv-tile::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--sv-blue), var(--sv-yellow));
+  }
+  .sv-tile-label {
+    font-size: var(--cds-font-size-caption);
+    font-weight: var(--cds-font-weight-medium);
+    color: var(--color-fg-muted);
+  }
+  .sv-tile-value {
+    font-family: var(--font-anthropic-serif);
+    font-size: var(--cds-font-size-title);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .sv-tile-value.blue { color: var(--sv-blue-dark); }
+  .sv-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+    gap: var(--cds-gap-md);
+    align-items: start;
+  }
+  .sv-grid.wide { grid-template-columns: repeat(auto-fit, minmax(min(100%, 30rem), 1fr)); }
+  .sv-grid.align-stretch { align-items: stretch; }
+  .sv-grid.align-stretch .sv-card { height: 100%; }
+  #sv-chart-forme { display: flex; align-items: center; flex: 1 1 auto; }
+  .sv-card {
+    background: var(--color-panel);
+    border: 1px solid var(--color-border-line);
+    border-radius: var(--cds-radius);
+    padding: var(--cds-pad-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--cds-gap-sm);
+    min-width: 0;
+    transition: box-shadow .15s ease, border-color .15s ease;
+  }
+  .sv-card:hover {
+    box-shadow: var(--cds-shadow-popover);
+    border-color: color-mix(in srgb, var(--sv-blue) 30%, var(--color-border-line));
+  }
+  .sv-card h2 {
+    font-size: var(--cds-font-size-heading);
+    font-weight: var(--cds-font-weight-medium);
+    margin: 0;
+  }
+  .sv-card .sv-note {
+    font-size: var(--cds-font-size-caption);
+    color: var(--color-fg-muted);
+    margin-top: -4px;
+  }
+  .sv-chart { min-height: 1px; }
+  .sv-bar-row { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
+  .sv-bar-rank {
+    flex: 0 0 auto;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    font-weight: var(--cds-font-weight-medium);
+    background: var(--sv-yellow);
+    color: #2a1d00;
+  }
+  .sv-bar-rank.muted { background: var(--color-border-line); color: var(--color-fg-muted); }
+  .sv-bar-label {
+    width: 9.5rem;
+    flex: 0 0 auto;
+    font-size: var(--cds-font-size-caption);
+    color: var(--color-fg);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .sv-bar-track {
+    flex: 1 1 auto;
+    position: relative;
+    height: 22px;
+    min-width: 0;
+    background: color-mix(in srgb, var(--sv-blue) 8%, transparent);
+    border-radius: 10px;
+  }
+  .sv-bar-fill {
+    position: absolute; left: 0; top: 3px; height: 16px; border-radius: 8px;
+    background: linear-gradient(90deg, var(--sv-blue-dark), var(--sv-blue));
+    transition: width .4s ease;
+  }
+  .sv-bar-row:hover .sv-bar-fill { filter: brightness(1.1); }
+  .sv-bar-value {
+    flex: 0 0 auto; width: 2.6rem; text-align: right;
+    font-variant-numeric: tabular-nums; font-size: var(--cds-font-size-body);
+    font-weight: 700;
+    color: var(--color-fg);
+  }
+  .sv-bar-row.compact .sv-bar-track { height: 15px; }
+  .sv-bar-row.compact .sv-bar-fill { height: 10px; top: 2.5px; border-radius: 6px; }
+  .sv-bar-detail {
+    font-size: var(--cds-font-size-caption);
+    color: var(--color-fg-muted);
+    margin-left: calc(9.5rem + 36px);
+    margin-top: -4px;
+  }
+  .sv-legend { display: flex; gap: var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .sv-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  .sv-list { display: flex; flex-direction: column; gap: var(--cds-gap-xs); }
+  .sv-status-row {
+    display: flex; align-items: center; gap: 8px; font-size: var(--cds-font-size-body);
+    padding: 7px 10px; border-radius: 8px;
+    background: color-mix(in srgb, var(--color-fg) 4%, transparent);
+  }
+  .sv-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+  .sv-table { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-caption); }
+  .sv-table th { text-align: left; font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); padding: 4px 8px 6px 0; border-bottom: 1px solid var(--color-border-line); }
+  .sv-table td { padding: 5px 8px 5px 0; border-bottom: 1px solid var(--color-border-line); font-variant-numeric: tabular-nums; }
+  .sv-table tr:last-child td { border-bottom: none; }
+  .sv-table tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--color-fg) 3%, transparent); }
+  .sv-match-row {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 10px 12px; border-radius: 10px;
+    background: var(--color-panel);
+    border: 1px solid var(--color-border-line);
+  }
+  .sv-match-row + .sv-match-row { margin-top: 8px; }
+  .sv-match-date {
+    width: 100%; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); text-transform: capitalize;
+  }
+  .sv-match-competition {
+    display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 700;
+    background: var(--sv-blue); color: #fff; flex: 0 0 auto;
+  }
+  .sv-match-teams {
+    display: flex; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0;
+    font-family: var(--font-anthropic-serif); font-weight: 700; font-size: var(--cds-font-size-body);
+  }
+  .sv-match-logo { width: 32px; height: 32px; object-fit: contain; border-radius: 6px; flex: 0 0 auto; }
+  .sv-match-team-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sv-match-sep { color: var(--color-fg-muted); font-weight: 400; flex: 0 0 auto; }
+  .sv-badge-lieu {
+    display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 700;
+    color: #fff; flex: 0 0 auto;
+  }
+  .sv-badge-lieu.domicile { background: #2E7D32; }
+  .sv-badge-lieu.exterieur { background: #616161; }
+  .sv-forme-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .sv-forme-chip {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px; color: #fff; flex: 0 0 auto;
+  }
+  .sv-forme-chip.V { background: var(--color-ok); }
+  .sv-forme-chip.N { background: var(--color-fg-muted); }
+  .sv-forme-chip.D { background: var(--color-bad); }
+  .sv-table-ratio th, .sv-table-ratio td { text-align: center; }
+  .sv-table-ratio th:first-child, .sv-table-ratio td:first-child { text-align: left; }
+  .sv-name-cell { display: flex; align-items: center; gap: 8px; }
+  .sv-table-ratio td { padding: 8px 8px; }
+  .sv-ratio-pill {
+    display: inline-block; min-width: 3.4rem; padding: 4px 12px;
+    border-radius: 999px; font-weight: 700; font-size: var(--cds-font-size-body);
+    font-variant-numeric: tabular-nums; color: #fff;
+  }
+  .sv-ratio-pill.cartons { color: #2a1d00; }
+  .sv-tooltip {
+    position: absolute; pointer-events: none; background: var(--cds-surface-popover);
+    border: 1px solid var(--cds-border); border-radius: var(--cds-radius);
+    box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-xs) var(--cds-pad-sm);
+    font-size: var(--cds-font-size-caption); max-width: 16rem; opacity: 0; transition: opacity .1s;
+    z-index: 5;
+  }
+  .sv-tooltip.show { opacity: 1; }
+  .sv-tooltip .sv-tt-title { font-weight: var(--cds-font-weight-medium); margin-bottom: 2px; }
+  .sv-footer { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); text-align: center; }
+  @media (max-width: 420px) {
+    .sv-logo { width: 72px; height: 72px; }
+    .sv-bar-label { width: 6.5rem; }
+    .sv-bar-detail { margin-left: calc(6.5rem + 36px); }
+  }
+</style>
+</head>
+<body>
+<div id="dash-root">
+  <div class="sv">
+    <div class="sv-header">
+      <img class="sv-logo" src="logo.png" alt="Logo Wall. Ass. Sauvenière">
+      <div class="sv-header-text">
+        <div class="sv-eyebrow">Wall. Ass. Sauvenière — Équipe Première A</div>
+        <h1 class="sv-title">Statistiques de la saison</h1>
+      </div>
+    </div>
+
+    <div class="sv-hero" id="sv-hero">
+      <div class="sv-tile"><div class="sv-tile-label">Position</div><div class="sv-tile-value blue" id="sv-hero-position">—</div></div>
+      <div class="sv-tile"><div class="sv-tile-label">Points</div><div class="sv-tile-value blue" id="sv-hero-points">—</div></div>
+      <div class="sv-tile"><div class="sv-tile-label">Joués (champ.)</div><div class="sv-tile-value blue" id="sv-hero-joues">—</div></div>
+      <div class="sv-tile"><div class="sv-tile-label">Buts marqués</div><div class="sv-tile-value blue" id="sv-hero-buts-pour">—</div></div>
+      <div class="sv-tile"><div class="sv-tile-label">Buts encaissés</div><div class="sv-tile-value blue" id="sv-hero-buts-contre">—</div></div>
+    </div>
+    <div class="sv-card" id="sv-card-prochain">
+      <h2>Prochains matchs</h2>
+      <div id="sv-matches-list"></div>
+    </div>
+
+    <div class="sv-grid wide align-stretch">
+      <div class="sv-card">
+        <h2>Forme récente</h2>
+        <p class="sv-note">Tous les matchs de championnat depuis le début de la saison, du plus ancien (gauche) au plus récent (droite).</p>
+        <div class="sv-chart" id="sv-chart-forme"></div>
+      </div>
+
+      <div class="sv-card">
+        <h2>Trajectoire du goal-average</h2>
+        <p class="sv-note">Différence de buts cumulée (marqués − encaissés), championnat uniquement.</p>
+        <div class="sv-chart" id="sv-chart-trajectoire"></div>
+      </div>
+    </div>
+
+    <div class="sv-card">
+      <h2>Évolution du classement</h2>
+      <p class="sv-note">Position en championnat après chaque journée jouée (1 = premier). Reconstituée à partir du classement complet de la série, journée par journée.</p>
+      <div class="sv-chart" id="sv-chart-classement"></div>
+    </div>
+
+    <div class="sv-card">
+      <h2>Séries en cours</h2>
+      <p class="sv-note">Calculées sur les matchs de championnat, du plus récent en remontant.</p>
+      <div class="sv-hero" id="sv-series"></div>
+    </div>
+
+    <div class="sv-card">
+      <h2>Faits marquants de la saison</h2>
+      <p class="sv-note">Championnat uniquement, calculés sur tous les matchs joués.</p>
+      <div class="sv-list" id="sv-faits-marquants"></div>
+    </div>
+
+    <div class="sv-card">
+      <h2>Tendance récente</h2>
+      <p class="sv-note">Buts et cartons sur les 3 derniers matchs de championnat, comparés au total de la saison — pour repérer qui est en forme ou sur-sollicité.</p>
+      <table class="sv-table" id="sv-table-tendance">
+        <thead><tr><th>Joueur</th><th>Buts (3 derniers)</th><th>Buts (saison)</th><th>Jaunes (3 derniers)</th><th>Jaunes (saison)</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="sv-card">
+      <h2>Fiche joueur</h2>
+      <p class="sv-note">Buts, cartons et minutes de championnat (minutes = toutes compétitions avec détail disponible).</p>
+      <select id="sv-player-select" style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid var(--color-border-line); background:var(--color-panel); color:var(--color-fg); font-family:var(--font-anthropic-sans); font-size:var(--cds-font-size-body); margin-bottom:8px;"></select>
+      <div class="sv-hero" id="sv-player-card"></div>
+    </div>
+
+    <div class="sv-grid wide align-stretch">
+      <div class="sv-card">
+        <h2>Buts par 90 minutes</h2>
+        <p class="sv-note">Buts de championnat rapportés aux minutes jouées (×90). Minutes = toutes compétitions avec détail disponible (pas strictement le championnat).</p>
+        <table class="sv-table sv-table-ratio" id="sv-table-buts90">
+          <thead><tr><th>Joueur</th><th>Buts / 90 min</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="sv-card">
+        <h2>Cartons jaunes par 90 minutes</h2>
+        <p class="sv-note">Jaunes de championnat rapportés aux minutes jouées (×90). Minutes = toutes compétitions avec détail disponible (pas strictement le championnat).</p>
+        <table class="sv-table sv-table-ratio" id="sv-table-cartons90">
+          <thead><tr><th>Joueur</th><th>Jaunes / 90 min</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="sv-grid wide align-stretch">
+      <div class="sv-card">
+        <h2>Buteurs (championnat)</h2>
+        <p class="sv-note">Nombre de buts par joueur ; survolez une barre pour voir contre qui. Dont 1 but contre son camp, marqué par un joueur de RSC Petit-Waret A.</p>
+        <div class="sv-chart" id="sv-chart-buteurs"></div>
+      </div>
+
+      <div class="sv-card">
+        <h2>Cartons jaunes (championnat)</h2>
+        <p class="sv-note">Nombre de jaunes par joueur.</p>
+        <div class="sv-chart" id="sv-chart-cartons"></div>
+      </div>
+    </div>
+
+    <div class="sv-card">
+      <h2>Minutes jouées</h2>
+      <p class="sv-note">Toutes compétitions (pas que le championnat). * = minutes partielles (match sans détail FFA, ou dépannage).</p>
+      <div class="sv-chart" id="sv-chart-minutes"></div>
+    </div>
+
+    <div class="sv-card">
+      <h2>Minutes par poste</h2>
+      <p class="sv-note">Total des minutes jouées, regroupées par poste (saisi manuellement par le club).</p>
+      <div class="sv-chart" id="sv-chart-postes"></div>
+    </div>
+
+    <div class="sv-grid">
+      <div class="sv-card">
+        <h2>Domicile / Extérieur</h2>
+        <p class="sv-note">Championnat uniquement.</p>
+        <div class="sv-legend">
+          <span><span class="sv-swatch" style="background:var(--sv-blue)"></span>Domicile</span>
+          <span><span class="sv-swatch" style="background:var(--sv-yellow)"></span>Extérieur</span>
+        </div>
+        <div class="sv-chart" id="sv-chart-domext"></div>
+      </div>
+
+      <div class="sv-card">
+        <h2>Buts par tranche de 15 minutes</h2>
+        <p class="sv-note">Championnat uniquement.</p>
+        <div class="sv-legend">
+          <span><span class="sv-swatch" style="background:var(--sv-blue)"></span>Marqués</span>
+          <span><span class="sv-swatch" style="background:var(--sv-yellow)"></span>Encaissés</span>
+        </div>
+        <div class="sv-chart" id="sv-chart-periodes"></div>
+      </div>
+    </div>
+
+    <div class="sv-grid">
+      <div class="sv-card">
+        <h2>Joueurs à risque de suspension</h2>
+        <p class="sv-note">Cartons jaunes de championnat uniquement.</p>
+        <div class="sv-list" id="sv-risque-list"></div>
+      </div>
+
+      <div class="sv-card">
+        <h2>Efficacité des remplacements</h2>
+        <p class="sv-note" id="sv-remplacements-note">—</p>
+        <p class="sv-note">Classés par nombre d'entrées suivies d'un but, puis par rapidité d'impact (écart moyen entrée → but, le plus court en premier).</p>
+        <table class="sv-table" id="sv-remplacements-table">
+          <thead><tr><th>Joueur</th><th>Entrées efficaces</th><th>Écart moyen</th><th>Détail</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <p class="sv-footer">
+      Généré automatiquement depuis le classeur de suivi de saison — Wall. Ass. Sauvenière.<br>
+      <img src="https://sauveniere.goatcounter.com/counter/TOTAL.svg" alt="Visiteurs uniques (GoatCounter)" style="vertical-align:middle; margin-top:6px;">
+    </p>
+  </div>
+
+  <div class="sv-tooltip" id="sv-tooltip"></div>
+</div>
+
+<script>
+(function () {
+  const fmt = d3.format(',');
+  const tooltip = document.getElementById('sv-tooltip');
+  const root = document.querySelector('.sv');
+  root.style.position = 'relative';
+
+  function showTooltip(evt, titleText, lines) {
+    tooltip.innerHTML = '<div class="sv-tt-title"></div>';
+    tooltip.querySelector('.sv-tt-title').textContent = titleText;
+    lines.forEach((l) => {
+      const d = document.createElement('div');
+      d.textContent = l;
+      tooltip.appendChild(d);
+    });
+    const rootBox = root.getBoundingClientRect();
+    const x = evt.clientX - rootBox.left + 12;
+    const y = evt.clientY - rootBox.top + 12;
+    tooltip.style.left = x + 'px';
+    tooltip.style.top = y + 'px';
+    tooltip.classList.add('show');
+  }
+  function hideTooltip() { tooltip.classList.remove('show'); }
+
+  // ---- Buteurs / Cartons : barres horizontales classées, avec pastille de rang ----
+  function renderRankedBars(containerId, rows, valueField, detailField, maxRows) {
+    const el = document.getElementById(containerId);
+    el.innerHTML = '';
+    const data = rows.slice(0, maxRows || rows.length).filter((r) => (r[valueField] || 0) > 0);
+    if (!data.length) { el.innerHTML = '<p class="sv-note">Aucune donnée pour l’instant.</p>'; return; }
+    const max = d3.max(data, (r) => r[valueField]) || 1;
+    data.forEach((r, i) => {
+      const row = document.createElement('div');
+      row.className = 'sv-bar-row';
+      const rank = document.createElement('div');
+      rank.className = 'sv-bar-rank' + (i < 3 ? '' : ' muted');
+      rank.textContent = i + 1;
+      const label = document.createElement('div');
+      label.className = 'sv-bar-label';
+      label.textContent = r.joueur;
+      const track = document.createElement('div');
+      track.className = 'sv-bar-track';
+      const fill = document.createElement('div');
+      fill.className = 'sv-bar-fill';
+      fill.style.width = Math.max(4, (r[valueField] / max) * 100) + '%';
+      track.appendChild(fill);
+      const value = document.createElement('div');
+      value.className = 'sv-bar-value';
+      value.textContent = fmt(r[valueField]);
+      row.appendChild(rank); row.appendChild(label); row.appendChild(track); row.appendChild(value);
+      el.appendChild(row);
+      if (detailField && r[detailField]) {
+        const d = document.createElement('div');
+        d.className = 'sv-bar-detail';
+        d.textContent = r[detailField];
+        el.appendChild(d);
+        row.addEventListener('mousemove', (evt) => showTooltip(evt, r.joueur, ['Adversaires : ' + r[detailField]]));
+        row.addEventListener('mouseleave', hideTooltip);
+      }
+    });
+  }
+
+  function renderMinutes(DATA) {
+    const rows = [...DATA.usage].sort((a, b) => b.minutes - a.minutes).slice(0, 12);
+    const el = document.getElementById('sv-chart-minutes');
+    el.innerHTML = '';
+    const max = d3.max(rows, (r) => r.minutes) || 1;
+    rows.forEach((r, i) => {
+      const row = document.createElement('div');
+      row.className = 'sv-bar-row compact';
+      const rank = document.createElement('div');
+      rank.className = 'sv-bar-rank' + (i < 3 ? '' : ' muted');
+      rank.textContent = i + 1;
+      const label = document.createElement('div');
+      label.className = 'sv-bar-label';
+      label.textContent = r.joueur + (r.incomplet ? ' *' : '');
+      const track = document.createElement('div');
+      track.className = 'sv-bar-track';
+      const fill = document.createElement('div');
+      fill.className = 'sv-bar-fill';
+      fill.style.width = Math.max(4, (r.minutes / max) * 100) + '%';
+      track.appendChild(fill);
+      const value = document.createElement('div');
+      value.className = 'sv-bar-value';
+      value.textContent = fmt(r.minutes) + "'";
+      row.appendChild(rank); row.appendChild(label); row.appendChild(track); row.appendChild(value);
+      el.appendChild(row);
+      row.addEventListener('mousemove', (evt) => showTooltip(evt, r.joueur, [
+        r.minutes + ' minutes sur ' + r.matchs_comptes + '/' + r.matchs_total_comptage + ' matchs comptés',
+        r.titularisations + ' titularisation(s), ' + r.entrees + ' entrée(s) en jeu',
+      ]));
+      row.addEventListener('mouseleave', hideTooltip);
+    });
+  }
+
+  // ---- Domicile/Extérieur et Périodes : barres groupées à deux séries (bleu/jaune) ----
+  function renderGrouped(containerId, categories, seriesA, seriesB) {
+    const el = document.getElementById(containerId);
+    el.innerHTML = '';
+    const width = Math.max(240, el.clientWidth || 320);
+    const barGroupH = 60;
+    const barH = 16;
+    const height = categories.length * barGroupH + 24;
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${width} ${height}`);
+
+    const defs = svg.append('defs');
+    const gradBlue = defs.append('linearGradient').attr('id', containerId + '-grad-blue').attr('x1', '0%').attr('x2', '100%');
+    gradBlue.append('stop').attr('offset', '0%').attr('stop-color', 'var(--sv-blue-dark)');
+    gradBlue.append('stop').attr('offset', '100%').attr('stop-color', 'var(--sv-blue)');
+    const gradYellow = defs.append('linearGradient').attr('id', containerId + '-grad-yellow').attr('x1', '0%').attr('x2', '100%');
+    gradYellow.append('stop').attr('offset', '0%').attr('stop-color', 'var(--sv-yellow-dark)');
+    gradYellow.append('stop').attr('offset', '100%').attr('stop-color', 'var(--sv-yellow)');
+
+    const max = Math.max(d3.max(seriesA) || 0, d3.max(seriesB) || 0, 1);
+    const labelW = 92;
+    const chartW = width - labelW - 44;
+    const x = d3.scaleLinear().domain([0, max]).range([0, chartW]);
+
+    const gl = svg.append('g');
+    x.ticks(4).filter((t) => t > 0).forEach((t) => {
+      gl.append('line')
+        .attr('x1', labelW + x(t)).attr('x2', labelW + x(t))
+        .attr('y1', 4).attr('y2', height - 8)
+        .attr('stroke', 'var(--color-border-line)').attr('stroke-width', 1);
+    });
+
+    categories.forEach((cat, i) => {
+      const gy = i * barGroupH + 14;
+      svg.append('text').attr('x', 0).attr('y', gy + barH + 2).attr('font-size', 11)
+        .attr('font-weight', 500).attr('fill', 'var(--color-fg)').text(cat);
+      [[seriesA[i], `url(#${containerId}-grad-blue)`, 0], [seriesB[i], `url(#${containerId}-grad-yellow)`, barH + 6]].forEach(([val, fill, dy]) => {
+        const g = svg.append('g').attr('transform', `translate(${labelW},${gy + dy})`);
+        g.append('rect').attr('x', 0).attr('y', 0).attr('width', chartW).attr('height', barH)
+          .attr('rx', barH / 2).attr('fill', 'var(--color-border-line)').attr('opacity', 0.3);
+        g.append('rect').attr('x', 0).attr('y', 0).attr('width', Math.max(barH, x(val))).attr('height', barH)
+          .attr('rx', barH / 2).attr('fill', fill);
+        g.append('text').attr('x', Math.max(barH, x(val)) + 6).attr('y', barH - 3).attr('font-size', 11)
+          .attr('font-variant-numeric', 'tabular-nums').attr('fill', 'var(--color-fg-muted)')
+          .text(val);
+      });
+    });
+  }
+
+  // ---- Risque de suspension ----
+  function renderRisque(DATA) {
+    const el = document.getElementById('sv-risque-list');
+    el.innerHTML = '';
+    if (!DATA.risque.length) { el.innerHTML = '<p class="sv-note">Aucun joueur à 2 jaunes ou plus pour l’instant.</p>'; return; }
+    DATA.risque.forEach((r) => {
+      const row = document.createElement('div');
+      row.className = 'sv-status-row';
+      const dot = document.createElement('span');
+      dot.className = 'sv-dot';
+      dot.style.background = r.statut === 'critical' ? 'var(--color-bad)' : 'var(--color-warn)';
+      const text = document.createElement('span');
+      text.textContent = r.joueur + ' — ' + r.jaunes + ' jaune(s)';
+      row.appendChild(dot); row.appendChild(text);
+      el.appendChild(row);
+    });
+  }
+
+  // ---- Efficacité des remplacements ----
+  function renderRemplacements(DATA) {
+    const subGoals = DATA.remplacements.length;
+    const totalGoals = DATA.buteurs.reduce((s, r) => s + (r.buts_championnat || 0), 0);
+    const pct = totalGoals ? Math.round((100 * subGoals) / totalGoals) : 0;
+    document.getElementById('sv-remplacements-note').textContent =
+      subGoals + ' but(s) marqué(s) par un remplaçant après son entrée en jeu, sur ' + totalGoals + ' au total (' + pct + ' %).';
+
+    const tbody = document.querySelector('#sv-remplacements-table tbody');
+    tbody.innerHTML = '';
+
+    const parseMin = (v) => parseInt(String(v).replace("'", ''), 10);
+    const parNom = {};
+    DATA.remplacements.forEach((r) => {
+      const entree = parseMin(r.minute_entree);
+      const but = parseMin(r.minute_but);
+      const ecart = (Number.isFinite(entree) && Number.isFinite(but)) ? but - entree : null;
+      const p = parNom[r.joueur] || (parNom[r.joueur] = { joueur: r.joueur, instances: [] });
+      p.instances.push({ entree: r.minute_entree, but: r.minute_but, ecart });
+    });
+
+    const joueurs = Object.values(parNom).map((p) => {
+      const ecarts = p.instances.map((i) => i.ecart).filter((e) => e !== null);
+      const ecartMoyen = ecarts.length ? ecarts.reduce((a, b) => a + b, 0) / ecarts.length : null;
+      return { ...p, count: p.instances.length, ecartMoyen };
+    });
+    joueurs.sort((a, b) => b.count - a.count || (a.ecartMoyen ?? 999) - (b.ecartMoyen ?? 999));
+
+    joueurs.forEach((p) => {
+      const tr = document.createElement('tr');
+      const tdName = document.createElement('td'); tdName.textContent = p.joueur;
+      const tdCount = document.createElement('td'); tdCount.textContent = p.count;
+      const tdEcart = document.createElement('td');
+      tdEcart.textContent = p.ecartMoyen !== null ? Math.round(p.ecartMoyen * 10) / 10 + " min" : '—';
+      const tdDetail = document.createElement('td');
+      tdDetail.style.fontSize = 'var(--cds-font-size-caption)';
+      tdDetail.style.color = 'var(--color-fg-muted)';
+      tdDetail.textContent = p.instances.map((i) => i.entree + '→' + i.but).join(', ');
+      tr.appendChild(tdName); tr.appendChild(tdCount); tr.appendChild(tdEcart); tr.appendChild(tdDetail);
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ---- Prochains matchs : même mise en forme que le programme du week-end (logos + badge vert/gris) ----
+  function renderProchainsMatchs(DATA) {
+    const card = document.getElementById('sv-card-prochain');
+    const list = DATA.prochains_matchs || [];
+    if (!list.length) { card.style.display = 'none'; return; }
+    card.style.display = '';
+    const el = document.getElementById('sv-matches-list');
+    el.innerHTML = '';
+
+    list.forEach((m) => {
+      const isHome = m.lieu === 'Domicile';
+      const homeName = isHome ? 'WA Sauvenière A' : m.adversaire;
+      const awayName = isHome ? m.adversaire : 'WA Sauvenière A';
+      const homeLogo = isHome ? 'logo.png' : m.adversaire_logo_url;
+      const awayLogo = isHome ? m.adversaire_logo_url : 'logo.png';
+
+      const row = document.createElement('div');
+      row.className = 'sv-match-row';
+
+      const dateEl = document.createElement('div');
+      dateEl.className = 'sv-match-date';
+      dateEl.textContent = m.date_fr + (m.heure ? ' — ' + m.heure : '');
+      row.appendChild(dateEl);
+
+      if (m.competition) {
+        const comp = document.createElement('span');
+        comp.className = 'sv-match-competition';
+        comp.textContent = m.competition;
+        row.appendChild(comp);
+      }
+
+      const teams = document.createElement('div');
+      teams.className = 'sv-match-teams';
+      if (homeLogo) {
+        const img1 = document.createElement('img');
+        img1.className = 'sv-match-logo'; img1.src = homeLogo; img1.alt = homeName; img1.loading = 'lazy';
+        img1.onerror = () => { img1.style.visibility = 'hidden'; };
+        teams.appendChild(img1);
+      }
+      const n1 = document.createElement('span');
+      n1.className = 'sv-match-team-name'; n1.textContent = homeName;
+      teams.appendChild(n1);
+      const sep = document.createElement('span');
+      sep.className = 'sv-match-sep'; sep.textContent = '–';
+      teams.appendChild(sep);
+      const n2 = document.createElement('span');
+      n2.className = 'sv-match-team-name'; n2.textContent = awayName;
+      teams.appendChild(n2);
+      if (awayLogo) {
+        const img2 = document.createElement('img');
+        img2.className = 'sv-match-logo'; img2.src = awayLogo; img2.alt = awayName; img2.loading = 'lazy';
+        img2.onerror = () => { img2.style.visibility = 'hidden'; };
+        teams.appendChild(img2);
+      }
+      row.appendChild(teams);
+
+      const badge = document.createElement('span');
+      badge.className = 'sv-badge-lieu ' + (isHome ? 'domicile' : 'exterieur');
+      badge.textContent = m.lieu;
+      row.appendChild(badge);
+
+      el.appendChild(row);
+    });
+  }
+
+  // ---- Forme récente : pastilles V/N/D ----
+  function renderForme(DATA) {
+    const el = document.getElementById('sv-chart-forme');
+    el.innerHTML = '';
+    if (!DATA.forme.length) return;
+    const row = document.createElement('div');
+    row.className = 'sv-forme-row';
+    DATA.forme.forEach((r) => {
+      const chip = document.createElement('div');
+      chip.className = 'sv-forme-chip ' + r.resultat;
+      chip.textContent = r.resultat;
+      chip.addEventListener('mousemove', (evt) => showTooltip(evt, r.adversaire, [r.date + ' — ' + r.score]));
+      chip.addEventListener('mouseleave', hideTooltip);
+      row.appendChild(chip);
+    });
+    el.appendChild(row);
+  }
+
+  // ---- Trajectoire du goal-average : courbe cumulée ----
+  function renderTrajectoire(DATA) {
+    const el = document.getElementById('sv-chart-trajectoire');
+    el.innerHTML = '';
+    const rows = DATA.trajectoire;
+    if (!rows.length) return;
+    const width = Math.max(240, el.clientWidth || 320);
+    const height = 200;
+    const padL = 32, padR = 12, padT = 12, padB = 24;
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${width} ${height}`);
+    const x = d3.scaleLinear().domain([1, rows.length]).range([padL, width - padR]);
+    const yMax = Math.max(1, d3.max(rows, (r) => Math.abs(r.diff_cumule)));
+    const y = d3.scaleLinear().domain([-yMax, yMax]).range([height - padB, padT]);
+
+    svg.append('line').attr('x1', padL).attr('x2', width - padR).attr('y1', y(0)).attr('y2', y(0))
+      .attr('stroke', 'var(--color-border-line)').attr('stroke-width', 1);
+    y.ticks(4).forEach((t) => {
+      svg.append('text').attr('x', padL - 6).attr('y', y(t) + 3).attr('font-size', 10)
+        .attr('text-anchor', 'end').attr('fill', 'var(--color-fg-muted)').text(t > 0 ? '+' + t : t);
+    });
+
+    const line = d3.line().x((r) => x(r.journee)).y((r) => y(r.diff_cumule)).curve(d3.curveMonotoneX);
+    svg.append('path').datum(rows).attr('d', line).attr('fill', 'none')
+      .attr('stroke', 'var(--sv-blue)').attr('stroke-width', 2.5).attr('stroke-linecap', 'round');
+
+    rows.forEach((r) => {
+      const pt = svg.append('circle').attr('cx', x(r.journee)).attr('cy', y(r.diff_cumule)).attr('r', 4)
+        .attr('fill', r.diff_cumule >= 0 ? 'var(--sv-blue)' : 'var(--color-bad)')
+        .attr('stroke', 'var(--color-panel)').attr('stroke-width', 1.5);
+      pt.on('mousemove', (evt) => showTooltip(evt, 'J' + r.journee + ' — ' + r.adversaire, [
+        r.date,
+        'Diff. cumulée : ' + (r.diff_cumule >= 0 ? '+' : '') + r.diff_cumule,
+        r.bp_cumule + ' marqués / ' + r.bc_cumule + ' encaissés',
+      ]));
+      pt.on('mouseleave', hideTooltip);
+    });
+  }
+
+  // ---- Évolution du classement : position après chaque journée (axe inversé, 1er en haut) ----
+  function renderClassementEvolution(DATA) {
+    const el = document.getElementById('sv-chart-classement');
+    el.innerHTML = '';
+    const rows = DATA.classement_evolution;
+    if (!rows || !rows.length) { el.innerHTML = '<p class="sv-note">Aucune donnée pour l’instant.</p>'; return; }
+    const width = Math.max(240, el.clientWidth || 320);
+    const height = 220;
+    const padL = 28, padR = 12, padT = 16, padB = 24;
+    const totalEquipes = rows[rows.length - 1].total_equipes || 16;
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${width} ${height}`);
+    const x = d3.scaleLinear().domain([1, rows.length]).range([padL, width - padR]);
+    const y = d3.scaleLinear().domain([1, totalEquipes]).range([padT, height - padB]);
+
+    y.ticks(Math.min(8, totalEquipes)).forEach((t) => {
+      if (t < 1) return;
+      svg.append('line').attr('x1', padL).attr('x2', width - padR).attr('y1', y(t)).attr('y2', y(t))
+        .attr('stroke', 'var(--color-border-line)').attr('stroke-width', 1);
+      svg.append('text').attr('x', padL - 6).attr('y', y(t) + 3).attr('font-size', 10)
+        .attr('text-anchor', 'end').attr('fill', 'var(--color-fg-muted)').text(Math.round(t));
+    });
+
+    const line = d3.line().x((r) => x(r.journee)).y((r) => y(r.position)).curve(d3.curveMonotoneX);
+    svg.append('path').datum(rows).attr('d', line).attr('fill', 'none')
+      .attr('stroke', 'var(--sv-blue)').attr('stroke-width', 2.5).attr('stroke-linecap', 'round');
+
+    rows.forEach((r) => {
+      const pt = svg.append('circle').attr('cx', x(r.journee)).attr('cy', y(r.position)).attr('r', 4)
+        .attr('fill', 'var(--sv-blue)').attr('stroke', 'var(--color-panel)').attr('stroke-width', 1.5);
+      pt.on('mousemove', (evt) => showTooltip(evt, 'Journée ' + r.journee, [
+        r.date,
+        'Position : ' + r.position + ' / ' + r.total_equipes,
+        r.points + ' points',
+      ]));
+      pt.on('mouseleave', hideTooltip);
+    });
+  }
+
+  // ---- Séries en cours : calculées depuis la forme (championnat, du plus récent en remontant) ----
+  function renderSeries(DATA) {
+    const el = document.getElementById('sv-series');
+    el.innerHTML = '';
+    const rows = DATA.forme || [];
+    if (!rows.length) return;
+    let winStreak = 0;
+    for (let i = rows.length - 1; i >= 0; i--) { if (rows[i].resultat === 'V') winStreak++; else break; }
+    let unbeatenStreak = 0;
+    for (let i = rows.length - 1; i >= 0; i--) { if (rows[i].resultat !== 'D') unbeatenStreak++; else break; }
+    let cleanSheetStreak = 0;
+    for (let i = rows.length - 1; i >= 0; i--) {
+      const bc = parseInt((rows[i].score || '').split('-')[1], 10);
+      if (bc === 0) cleanSheetStreak++; else break;
+    }
+    const totalCleanSheets = rows.filter((r) => parseInt((r.score || '').split('-')[1], 10) === 0).length;
+
+    [
+      ['Victoires de suite', winStreak],
+      ['Invincibilité (matchs)', unbeatenStreak],
+      ['Clean sheets de suite', cleanSheetStreak],
+      ['Clean sheets (saison)', totalCleanSheets],
+    ].forEach(([label, value]) => {
+      const tile = document.createElement('div');
+      tile.className = 'sv-tile';
+      const l = document.createElement('div'); l.className = 'sv-tile-label'; l.textContent = label;
+      const v = document.createElement('div'); v.className = 'sv-tile-value blue'; v.textContent = value;
+      tile.appendChild(l); tile.appendChild(v);
+      el.appendChild(tile);
+    });
+  }
+
+  // ---- Minutes par poste : agrégation côté client depuis usage[].poste ----
+  function renderMinutesParPoste(DATA) {
+    const totals = {};
+    (DATA.usage || []).forEach((r) => {
+      if (!r.poste) return;
+      totals[r.poste] = (totals[r.poste] || 0) + (r.minutes || 0);
+    });
+    const rows = Object.entries(totals).map(([joueur, minutes]) => ({ joueur, minutes }));
+    rows.sort((a, b) => b.minutes - a.minutes);
+    renderRankedBars('sv-chart-postes', rows, 'minutes', null);
+  }
+
+  // ---- Faits marquants de la saison : calculés depuis la forme (championnat) ----
+  function _fmtDateCourte(iso) {
+    const [y, m, d] = (iso || '').split('-');
+    return d && m ? `${d}/${m}/${y}` : iso;
+  }
+  function renderFaitsMarquants(DATA) {
+    const el = document.getElementById('sv-faits-marquants');
+    el.innerHTML = '';
+    const rows = (DATA.forme || []).map((r) => {
+      const [bp, bc] = (r.score || '0-0').split('-').map((x) => parseInt(x, 10));
+      return { ...r, bp, bc, diff: bp - bc, total: bp + bc };
+    });
+    if (!rows.length) return;
+
+    const victoires = rows.filter((r) => r.resultat === 'V');
+    const defaites = rows.filter((r) => r.resultat === 'D');
+    const faits = [];
+    if (victoires.length) {
+      const best = victoires.reduce((a, b) => (b.diff > a.diff ? b : a));
+      faits.push(`🏆 Plus large victoire : ${best.score} contre ${best.adversaire} (${_fmtDateCourte(best.date)})`);
+    }
+    if (defaites.length) {
+      const worst = defaites.reduce((a, b) => (b.diff < a.diff ? b : a));
+      faits.push(`📉 Plus lourde défaite : ${worst.score} contre ${worst.adversaire} (${_fmtDateCourte(worst.date)})`);
+    }
+    const prolifique = rows.reduce((a, b) => (b.total > a.total ? b : a));
+    faits.push(`⚽ Match le plus prolifique : ${prolifique.score} contre ${prolifique.adversaire} (${_fmtDateCourte(prolifique.date)}) — ${prolifique.total} buts au total`);
+
+    faits.forEach((text) => {
+      const row = document.createElement('div');
+      row.className = 'sv-status-row';
+      const span = document.createElement('span');
+      span.textContent = text;
+      row.appendChild(span);
+      el.appendChild(row);
+    });
+  }
+
+  // ---- Tendance récente : buts/jaunes des 3 derniers matchs vs saison ----
+  function renderTendance(DATA) {
+    const tbody = document.querySelector('#sv-table-tendance tbody');
+    tbody.innerHTML = '';
+    const rows = DATA.tendance_recente || [];
+    if (!rows.length) return;
+    [...rows].sort((a, b) => b.buts_recent - a.buts_recent || b.jaunes_recent - a.jaunes_recent).forEach((r) => {
+      const buteur = (DATA.buteurs || []).find((b) => b.joueur === r.joueur) || {};
+      const carton = (DATA.cartons || []).find((c) => c.joueur === r.joueur) || {};
+      const tr = document.createElement('tr');
+      [r.joueur, r.buts_recent, buteur.buts_championnat ?? 0, r.jaunes_recent, carton.jaunes_championnat ?? 0].forEach((val) => {
+        const td = document.createElement('td');
+        td.textContent = val;
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ---- Fiche joueur : sélecteur + agrégation depuis les datasets existants ----
+  function setupPlayerCard(DATA) {
+    const select = document.getElementById('sv-player-select');
+    const names = new Set();
+    (DATA.usage || []).forEach((r) => names.add(r.joueur));
+    (DATA.buteurs || []).forEach((r) => names.add(r.joueur));
+    (DATA.cartons || []).forEach((r) => names.add(r.joueur));
+    const sorted = [...names].sort((a, b) => a.localeCompare(b, 'fr'));
+    select.innerHTML = '';
+    sorted.forEach((name) => {
+      const opt = document.createElement('option');
+      opt.value = name; opt.textContent = name;
+      select.appendChild(opt);
+    });
+
+    function renderPlayer(name) {
+      const el = document.getElementById('sv-player-card');
+      el.innerHTML = '';
+      const usage = (DATA.usage || []).find((r) => r.joueur === name) || {};
+      const buteur = (DATA.buteurs || []).find((r) => r.joueur === name) || {};
+      const carton = (DATA.cartons || []).find((r) => r.joueur === name) || {};
+      const ratio = (DATA.ratios || []).find((r) => r.joueur === name) || {};
+      [
+        ['Poste', usage.poste ?? '—'],
+        ['Matchs joués', usage.matchs_joues ?? '—'],
+        ['Minutes jouées', usage.minutes ?? '—'],
+        ['Buts (champ.)', buteur.buts_championnat ?? 0],
+        ['Jaunes (champ.)', carton.jaunes_championnat ?? 0],
+        ['Buts / 90 min', ratio.buts_par_90 ?? 0],
+        ['Jaunes / 90 min', ratio.cartons_par_90 ?? 0],
+      ].forEach(([label, value]) => {
+        const tile = document.createElement('div');
+        tile.className = 'sv-tile';
+        const l = document.createElement('div'); l.className = 'sv-tile-label'; l.textContent = label;
+        const v = document.createElement('div'); v.className = 'sv-tile-value blue'; v.textContent = value;
+        tile.appendChild(l); tile.appendChild(v);
+        el.appendChild(tile);
+      });
+    }
+
+    select.addEventListener('change', () => renderPlayer(select.value));
+    if (sorted.length) { select.value = sorted[0]; renderPlayer(sorted[0]); }
+  }
+
+  // ---- Buts/cartons par 90 min : deux tableaux, pastilles bien visibles ----
+  function renderRatioTable(tableId, rows, field, colorVar, pillClass) {
+    const tbody = document.querySelector('#' + tableId + ' tbody');
+    tbody.innerHTML = '';
+    const sorted = rows.filter((r) => r[field] > 0).sort((a, b) => b[field] - a[field]);
+    const maxVal = d3.max(sorted, (r) => r[field]) || 1;
+    sorted.forEach((r, i) => {
+      const tr = document.createElement('tr');
+      const tdName = document.createElement('td');
+      const nameCell = document.createElement('span');
+      nameCell.className = 'sv-name-cell';
+      const rank = document.createElement('span');
+      rank.className = 'sv-bar-rank' + (i < 3 ? '' : ' muted');
+      rank.textContent = i + 1;
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = r.joueur;
+      nameCell.appendChild(rank); nameCell.appendChild(nameSpan);
+      tdName.appendChild(nameCell);
+      const tdVal = document.createElement('td');
+      const pill = document.createElement('span');
+      pill.className = pillClass;
+      const t = Math.min(1, r[field] / maxVal);
+      pill.style.background = `color-mix(in srgb, ${colorVar} ${20 + t * 80}%, var(--color-border-line))`;
+      pill.textContent = r[field].toFixed(2);
+      tdVal.appendChild(pill);
+      tr.appendChild(tdName); tr.appendChild(tdVal);
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderHero(DATA) {
+    if (!DATA.classement.length) return;
+    const r = DATA.classement[0];
+    document.getElementById('sv-hero-position').textContent = r.position ?? '—';
+    document.getElementById('sv-hero-points').textContent = r.points ?? '—';
+    document.getElementById('sv-hero-joues').textContent = r.joues ?? '—';
+    document.getElementById('sv-hero-buts-pour').textContent = r.buts_pour ?? '—';
+    document.getElementById('sv-hero-buts-contre').textContent = r.buts_contre ?? '—';
+  }
+
+  function renderAll(DATA) {
+    renderHero(DATA);
+    renderProchainsMatchs(DATA);
+    renderForme(DATA);
+    renderTrajectoire(DATA);
+    renderClassementEvolution(DATA);
+    renderSeries(DATA);
+    renderFaitsMarquants(DATA);
+    renderTendance(DATA);
+    renderRatioTable('sv-table-buts90', DATA.ratios, 'buts_par_90', 'var(--sv-blue)', 'sv-ratio-pill');
+    renderRatioTable('sv-table-cartons90', DATA.ratios, 'cartons_par_90', 'var(--sv-yellow)', 'sv-ratio-pill cartons');
+    renderRankedBars('sv-chart-buteurs', [...DATA.buteurs].sort((a, b) => b.buts_championnat - a.buts_championnat), 'buts_championnat', 'adversaires');
+    renderRankedBars('sv-chart-cartons', [...DATA.cartons].sort((a, b) => b.jaunes_championnat - a.jaunes_championnat), 'jaunes_championnat', null);
+    renderMinutes(DATA);
+    renderMinutesParPoste(DATA);
+    const dom = DATA.domicile_exterieur.find((r) => r.lieu === 'Domicile') || { victoires: 0, nuls: 0, defaites: 0 };
+    const ext = DATA.domicile_exterieur.find((r) => r.lieu === 'Extérieur') || { victoires: 0, nuls: 0, defaites: 0 };
+    renderGrouped('sv-chart-domext', ['Victoires', 'Nuls', 'Défaites'], [dom.victoires, dom.nuls, dom.defaites], [ext.victoires, ext.nuls, ext.defaites]);
+    renderGrouped('sv-chart-periodes', DATA.periodes.map((r) => r.periode), DATA.periodes.map((r) => r.buts_marques), DATA.periodes.map((r) => r.buts_encaisses));
+    renderRisque(DATA);
+    renderRemplacements(DATA);
+  }
+
+  fetch('data.json').then((r) => r.json()).then((DATA) => {
+    renderAll(DATA);
+    setupPlayerCard(DATA);
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => renderAll(DATA), 150);
+    });
+  }).catch((err) => {
+    document.getElementById('dash-root').innerHTML = '<p class="sv-note">Erreur de chargement des statistiques : ' + err + '</p>';
+  });
+})();
+</script>
+<script data-goatcounter="https://sauveniere.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
